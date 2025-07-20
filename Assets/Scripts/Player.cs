@@ -1,5 +1,6 @@
 ﻿    using UnityEngine;
     using UnityEngine.InputSystem;
+    using UnityEngine.Serialization;
 
     [RequireComponent(typeof(Rigidbody))]
     public class Player : Entity
@@ -22,6 +23,18 @@
         [SerializeField] private float extraGravity = 50f;
         
         private Collider[] colliderCheck =  new Collider[1];
+
+        
+        //the value of the state determines its priority, low priority states will be overwritten
+        public enum PlayerStates
+        {
+            Idle = 0,
+            Walking = 5,
+            Jumping = 10,
+            Hit = 20
+        }
+
+        public PlayerStates playerState =  PlayerStates.Idle;
         
         private void Awake()
         {
@@ -62,11 +75,22 @@
         {
             rb.AddForce(Vector3.down * extraGravity, ForceMode.Acceleration);
             
-            //Ground check and jumping
+            //Ground/Wall check and jumping
+            ObstacleCollisionCheck();
             
-            //isGrounded = Physics.Raycast(transform.position + new Vector3(0, -0.99f, 0) * col.bounds.extents.y, Vector3.down, 0.1f, groundLayer);
-            //Debug.DrawRay(transform.position + new Vector3(0, -0.99f, 0) * col.bounds.extents.y, Vector3.down * 0.1f,  Color.red);
-
+            if (isGrounded && jumpAction.IsPressed())
+            {
+                col.material = slipperyMaterial;
+                rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            }
+            
+            //Character movement
+            Move();
+        }
+        
+        
+        private void ObstacleCollisionCheck()
+        {
             isGrounded = Physics.OverlapBoxNonAlloc(transform.position + Vector3.down * (col.bounds.extents.y + 0.01f),
                 new Vector3(col.bounds.extents.x * 0.8f, 0.01f, 0), colliderCheck, Quaternion.identity, groundLayer) > 0;
             
@@ -75,15 +99,12 @@
             
             wallRight = Physics.OverlapBoxNonAlloc(transform.position + Vector3.right * (col.bounds.extents.x + 0.01f),
                 new Vector3(0.01f, col.bounds.extents.y * 0.6f, 0), colliderCheck, Quaternion.identity, groundLayer) > 0;
-            
-            
-            if (isGrounded && jumpAction.IsPressed())
-            {
-                col.material = slipperyMaterial;
-                rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse); 
-            }
-
-            
+        }
+        
+        private void Move()
+        {
+            if (playerState > PlayerStates.Jumping)
+                return;
             
             float desiredSpeed = moveAction.ReadValue<float>() * maxSpeed;
 
@@ -107,6 +128,5 @@
             }
             else
                 rb.AddForce(Vector3.right * desiredSpeed, ForceMode.VelocityChange);
-                
         }
     }
