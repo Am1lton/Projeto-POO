@@ -79,7 +79,7 @@ namespace Powers
 
                 if (Physics.BoxCastNonAlloc(plr.transform.position,
                         new Vector3(plr.Col.bounds.extents.x, plr.Col.bounds.extents.y * 0.9f, 1f), Vector3.right * desiredDir,
-                        hit, Quaternion.identity, currentSpeed, plr.GroundLayer) > 0)
+                        hit, Quaternion.identity, currentSpeed) > 0)
                 {
                     plr.transform.position += Vector3.right * (hit[0].distance * desiredDir);
                     break;
