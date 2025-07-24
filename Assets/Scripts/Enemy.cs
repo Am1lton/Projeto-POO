@@ -39,7 +39,7 @@
         
         protected virtual void FixedUpdate()
         {
-            inRange = Physics.OverlapSphereNonAlloc(transform.position, attackRange, playerCol, GameManager.Instance.playerMask) > 0;
+            inRange = Physics.OverlapSphereNonAlloc(transform.position, attackRange, playerCol, GameManager.Instance.PlayerLayer) > 0;
             
             //WallCheck
             Vector3 wallCheckPositionOffset = new ((extents.x + 0.05f) * transform.right.x, extents.y * 0.03f, 0);
@@ -71,6 +71,13 @@
             {
                 rb.AddForce(transform.right * moveSpeed, ForceMode.VelocityChange);
             }
+        }
+
+        private void OnCollisionEnter(Collision collision)
+        {
+            if (collision.gameObject.layer != GameManager.Instance.PlayerLayer) return;
             
+            if (collision.gameObject.TryGetComponent(out Player player))
+                player.TakeDamage(1, transform);
         }
     }

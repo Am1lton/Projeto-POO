@@ -529,9 +529,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5fe53b8fe8634581bd7fb110ce132fa4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerMask:
+  playerLayer:
     serializedVersion: 2
     m_Bits: 128
+  invincibleLayer:
+    serializedVersion: 2
+    m_Bits: 1024
 --- !u!1 &710335231
 GameObject:
   m_ObjectHideFlags: 0
@@ -603,13 +606,15 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   col: {fileID: 763515362}
-  Gold: 0
+  material: {fileID: 2100000, guid: 463b57c272131ba409395ba5b449c6b2, type: 2}
+  gold: 0
   InputAsset: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   normalMaterial: {fileID: 13400000, guid: e16fade0bba5ce14fa44ac013dd5f4cb, type: 2}
   slipperyMaterial: {fileID: 13400000, guid: dd6742e2c895a2a4780b9641f7adf2e9, type: 2}
   jumpForce: 20
   maxSpeed: 7
   extraGravity: 50
+  invincibilityTime: 1
   playerState: 0
 --- !u!54 &763515361
 Rigidbody:
@@ -684,7 +689,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 463b57c272131ba409395ba5b449c6b2, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1051,7 +1056,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 463b57c272131ba409395ba5b449c6b2, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1095,7 +1100,7 @@ GameObject:
   - component: {fileID: 1472334045}
   - component: {fileID: 1472334044}
   - component: {fileID: 1472334043}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Enemy
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1119,6 +1124,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   moveSpeed: 1
+  attackRange: 0
 --- !u!54 &1472334044
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1143,8 +1149,8 @@ Rigidbody:
   m_ImplicitTensor: 1
   m_UseGravity: 1
   m_IsKinematic: 0
-  m_Interpolate: 0
-  m_Constraints: 0
+  m_Interpolate: 1
+  m_Constraints: 8
   m_CollisionDetection: 0
 --- !u!136 &1472334045
 CapsuleCollider:
