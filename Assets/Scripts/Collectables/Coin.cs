@@ -8,7 +8,7 @@ namespace Collectables
     {
         protected override void Collect(Player player)
         {
-            player.Gold += content;
+            player.gold += content;
         }
     }
 }

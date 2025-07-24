@@ -1,24 +1,24 @@
-﻿    using System;
+﻿	using System.Collections;
     using System.Collections.Generic;
-    using Classes;
-    using Powers;
+	using Powers;
     using UnityEngine;
     using UnityEngine.InputSystem;
+    using UnityEngine.Serialization;
 
     [RequireComponent(typeof(Rigidbody))]
     public class Player : Entity
     {
         [SerializeField] private LayerMask groundLayer;
-        public LayerMask GroundLayer => groundLayer;
         [SerializeField] private Collider col;
         public Collider Col => col;
-
-        public int Gold;
+        [SerializeField] private Material material;
+        
+        [FormerlySerializedAs("Gold")] public int gold;
         
         //player input
         // ReSharper disable once InconsistentNaming
         public InputActionAsset InputAsset;
-        public InputAction moveAction { get; private set; }
+        public InputAction MoveAction { get; private set; }
         private InputAction jumpAction;
         
         //Physics and movement
@@ -34,6 +34,7 @@
         [SerializeField] private float jumpForce = 20f;
         [SerializeField] private float maxSpeed = 7f;
         [SerializeField] private float extraGravity = 50f;
+        [SerializeField] private float invincibilityTime = 1f;
         public float MaxSpeed => maxSpeed;
         private Collider[] colliderCheck =  new Collider[1];
         
@@ -74,7 +75,7 @@
         
         private void Awake()
         {
-            moveAction = InputAsset.FindAction("Move");
+            MoveAction = InputAsset.FindAction("Move");
             jumpAction = InputAsset.FindAction("Jump");
             
             if (!col)
@@ -104,7 +105,7 @@
 
         private void Update()
         {
-            transform.right = moveAction.ReadValue<float>() switch
+            transform.right = MoveAction.ReadValue<float>() switch
             {
                 > 0 => Vector3.right,
                 < 0 => Vector3.left,
@@ -123,7 +124,7 @@
                 ObstacleCollisionCheck();
                 
                 //Character movement
-                float desiredSpeed = moveAction.ReadValue<float>() * maxSpeed;
+                float desiredSpeed = MoveAction.ReadValue<float>() * maxSpeed;
                 
                 if (playerState <= PlayerStates.CanWalk)
                     Move(desiredSpeed);
@@ -177,6 +178,69 @@
                     rb.AddForce(Vector3.right * desiredSpeed, ForceMode.VelocityChange);
             }
         #endregion
-        
-        
+
+        public override void TakeDamage(int damage, Transform attacker)
+        {
+            if (damage <= 0)
+                return;
+            
+            //while whe don't have a lot of powers
+            StartCoroutine(DamageJump(attacker));
+            StartCoroutine(InvincibilityFrame());
+            
+            /*
+            if (powers.Count > 0)
+            {
+                if (playerState <= PlayerStates.Hit)
+                {
+                    playerState = PlayerStates.Idle;
+                }
+                
+                
+                RemoveLatestPower();
+            }
+            else
+                Die();
+            */
+        }
+
+        private IEnumerator DamageJump(Transform attacker)
+        {
+            
+            Vector3 dir = new Vector3(attacker.position.x > transform.position.x ? -0.5f : 0.5f, 1, 0);
+            dir *= jumpForce;
+            rb.linearVelocity = Vector3.zero;
+            rb.AddForce(dir, ForceMode.Impulse);
+
+            playerState = PlayerStates.Hit;
+            yield return new WaitForSeconds(0.1f);
+            
+            while (!IsGrounded)
+            {
+                yield return null;
+            }
+
+            playerState = PlayerStates.Idle;
+        }
+
+        private IEnumerator InvincibilityFrame()
+        {
+            gameObject.layer = GameManager.Instance.InvincibleLayer;
+            float timer = 0f;
+            Color startColor = material.color;
+            
+            while (timer < invincibilityTime)
+            {
+                float t = Mathf.Sin(timer * Mathf.PI * 10f) * 0.5f + 0.5f;
+                
+                material.color = Color.Lerp(startColor, Color.red, t);
+                
+                timer += Time.deltaTime;
+                yield return null;
+            }
+
+            material.color = startColor;
+            
+            gameObject.layer = GameManager.Instance.PlayerLayer;
+        }
     }

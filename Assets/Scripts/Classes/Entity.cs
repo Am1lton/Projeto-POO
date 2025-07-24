@@ -4,7 +4,7 @@ public class Entity : MonoBehaviour
 {
     private int health;
 
-    public virtual void TakeDamage(int damage)
+    public virtual void TakeDamage(int damage, Transform attacker)
     {
         if (health - damage <= 0)
         { health = 0; Die(); }

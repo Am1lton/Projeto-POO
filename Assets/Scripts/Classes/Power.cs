@@ -1,6 +1,4 @@
-﻿using UnityEngine;
-
-namespace Powers
+﻿namespace Powers
 {
     public abstract class Power
     {
