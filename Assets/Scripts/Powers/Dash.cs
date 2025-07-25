@@ -29,7 +29,8 @@ namespace Powers
 
         public override void Deactivate(Player player)
         {
-                plr.StopCoroutine(coroutine);
+            playerDashAction.performed -= DashAbility;
+            plr.StopCoroutine(coroutine);
         }
 
         private void DashAbility(InputAction.CallbackContext context)

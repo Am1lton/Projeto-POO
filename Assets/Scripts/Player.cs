@@ -151,8 +151,8 @@
                 wallRight = Physics.OverlapBoxNonAlloc(transform.position + Vector3.right * (col.bounds.extents.x + 0.01f),
                     new Vector3(0.01f, col.bounds.extents.y * 0.6f, 0), colliderCheck, Quaternion.identity, groundLayer) > 0;
             }
-            
-            public void Move(float desiredSpeed)
+
+            private void Move(float desiredSpeed)
             {
                 if (isGrounded && playerState <= PlayerStates.Walking) playerState = PlayerStates.Walking;
 

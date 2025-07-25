@@ -1,14 +1,13 @@
-﻿using System;
-using UnityEngine;
+﻿    using UnityEngine;
 
 
     public class GameManager : MonoBehaviour
     {
-        public int PlayerLayer { get; private set; }
-        public int InvincibleLayer { get; private set; }
-
-        [SerializeField] private LayerMask playerLayer;
-        [SerializeField] private LayerMask invincibleLayer;
+        [SerializeField] public int playerLayer;
+        [SerializeField] public int invincibleLayer;
+        
+        public int PlayerLayer => playerLayer;
+        public int InvincibleLayer =>  invincibleLayer;
         
         public static GameManager Instance {get; private set;}
 
@@ -17,9 +16,6 @@ using UnityEngine;
             if (Instance == null)
                 Instance = this;
             else if (Instance != this)
-                Destroy(gameObject);
-            
-            PlayerLayer = (int)Mathf.Log(playerLayer.value, 2);
-            InvincibleLayer = (int)Mathf.Log(invincibleLayer.value, 2);
+                Destroy(this);
         }
     }
