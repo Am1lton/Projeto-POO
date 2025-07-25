@@ -25,6 +25,7 @@
             rb.freezeRotation = true;
             extents = col.bounds.extents;
             extents.z = 0;
+            col.excludeLayers = ~groundLayer;
         }
 
         #region Debug
@@ -73,11 +74,11 @@
             }
         }
 
-        private void OnCollisionEnter(Collision collision)
+        private void OnTriggerEnter(Collider other)
         {
-            if (collision.gameObject.layer != GameManager.Instance.PlayerLayer) return;
+            if (other.gameObject.layer != GameManager.Instance.PlayerLayer) return;
             
-            if (collision.gameObject.TryGetComponent(out Player player))
+            if (other.gameObject.TryGetComponent(out Player player))
                 player.TakeDamage(1, transform);
         }
     }

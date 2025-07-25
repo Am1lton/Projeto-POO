@@ -10,6 +10,8 @@
     {
         [SerializeField] private LayerMask groundLayer;
         [SerializeField] private Collider col;
+        [SerializeField] private GameObject projectile;
+        public GameObject Projectile => projectile;
         public Collider Col => col;
         [SerializeField] private Material material;
         

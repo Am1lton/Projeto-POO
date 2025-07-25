@@ -7,37 +7,54 @@ namespace Projectiles
     {
         [SerializeField] protected float speed = 10;
         [SerializeField] protected int damage = 1;
+        [SerializeField] protected float lifeTime = 3f;
 
-        protected Vector3 Velocity = Vector3.zero;
-        protected Rigidbody rb;
-        protected GameObject owner;
+        protected Rigidbody Rb;
+        protected int OwnerLayer;
 
+        protected RaycastHit[] Hits;
 
         protected virtual void Awake()
         {
-            rb = GetComponent<Rigidbody>();
-            rb.isKinematic = true;
+            Rb = GetComponent<Rigidbody>();
+            Rb.isKinematic = true;
+
+            if (transform.parent != null)
+            {
+                OwnerLayer = transform.parent.gameObject.layer;
+                transform.parent = null;
+            }
+            
+            Destroy(gameObject, lifeTime);
         }
         
         protected virtual void FixedUpdate()
         {
-            Velocity.x = speed * transform.right.x;
+            Hits = Rb.SweepTestAll(transform.right, speed * Time.deltaTime,
+                QueryTriggerInteraction.Collide);
             
-            if (rb.SweepTest(Velocity.normalized, out RaycastHit hit, Velocity.magnitude, QueryTriggerInteraction.Collide))
+            if (Hits.Length > 0)
             {
-                transform.position += Velocity.normalized * hit.distance;
+                foreach (RaycastHit hit in Hits)
+                {
+                    if (hit.collider.gameObject.layer != OwnerLayer)
+                        CollideWith(hit.collider);
+                    else
+                    {
+                        transform.position += transform.right * hit.distance;
+                        break;
+                    }
+                }
                 
-                if (hit.collider.gameObject != owner)
-                    CollideWith(hit.collider);
-                return;
+                
             }
             
-            transform.Translate(Velocity * Time.deltaTime, Space.World);
+            transform.position += transform.right * (speed * Time.deltaTime);
         }
 
         private void OnTriggerEnter(Collider other)
         {
-            if (other.gameObject == owner) return;
+            if (other.gameObject.layer == OwnerLayer) return;
             
             CollideWith(other);
         }
