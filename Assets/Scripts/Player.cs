@@ -24,6 +24,7 @@
         public InputAction MoveAction { get; private set; }
         public InputAction JumpAction { get; private set; }
         public InputAction DashAction { get; private set; }
+        public InputAction ShootAction { get; private set; }
         
         //Physics and movement
         private Rigidbody rb;
@@ -110,6 +111,8 @@
         {
             MoveAction = InputAsset.FindAction("Move");
             JumpAction = InputAsset.FindAction("Jump");
+            DashAction = InputAsset.FindAction("Dash");
+            ShootAction = InputAsset.FindAction("Shoot");
             
             if (!col)
                 col = GetComponent<Collider>();

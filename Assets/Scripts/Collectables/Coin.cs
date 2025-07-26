@@ -1,5 +1,4 @@
 ﻿using Classes;
-using UnityEngine;
 
 namespace Collectables
 {

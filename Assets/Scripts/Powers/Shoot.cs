@@ -11,20 +11,20 @@ namespace Powers
         private Player plr;
         private bool canShoot = true;
         private Coroutine coroutine;
-        
-        private static float shootCooldown = 3;
-        
+
+        private const float SHOOT_COOLDOWN_TIME = 3;
+
         public override void Activate(Player player)
         {
             plr = player;
-            player.InputAsset.FindAction("Shoot").performed += ShootProjectile;
+            player.ShootAction.performed += ShootProjectile;
             xOffset = player.Col.bounds.extents.x;
             projectile = player.Projectile;
         }
 
         public override void Deactivate(Player player)
         {
-            player.InputAsset.FindAction("Shoot").performed -= ShootProjectile;
+            player.ShootAction.performed -= ShootProjectile;
             if (coroutine != null)
                 plr.StopCoroutine(coroutine);
         }
@@ -41,7 +41,7 @@ namespace Powers
         private IEnumerator ShootCooldown()
         {
             float timer = 0f;
-            while (timer < shootCooldown)
+            while (timer < SHOOT_COOLDOWN_TIME)
             {
                 timer += Time.deltaTime;
                 yield return null;

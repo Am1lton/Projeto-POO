@@ -1,21 +1,16 @@
-﻿    using System;
-    using UnityEngine;
+﻿using UnityEngine;
+using UnityEngine.Serialization;
 
-    [RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(Rigidbody))]
     public class Enemy : Entity
     {
-        [SerializeField] private Collider col;
+        [SerializeField] private Collider nonTriggerCollider;
         [SerializeField] private LayerMask groundLayer;
         [SerializeField] private float moveSpeed;
-        [SerializeField] private float attackRange;
-
-        private bool inRange = false;
-
 
         private Vector3 extents;
         private Rigidbody rb;
         private bool wall = false;
-        private readonly Collider[] playerCol = new Collider[1];
         private readonly Collider[] wallCheck = new Collider[1];
         
         
@@ -23,9 +18,9 @@
         {
             rb = GetComponent<Rigidbody>();
             rb.freezeRotation = true;
-            extents = col.bounds.extents;
+            extents = nonTriggerCollider.bounds.extents;
             extents.z = 0;
-            col.excludeLayers = ~groundLayer;
+            nonTriggerCollider.excludeLayers = ~groundLayer;
         }
 
         #region Debug
@@ -34,25 +29,25 @@
         {
             Gizmos.DrawWireCube(transform.position + new Vector3((extents.x + 0.05f) * transform.right.x, extents.y * 0.03f, 0),
                 new Vector3(0.05f, extents.y * 0.97f, 0) * 2);
+            
+            Gizmos.DrawWireSphere(transform.position, nonTriggerCollider.bounds.extents.x * 0.5f);
         }
         
         #endregion
         
         protected virtual void FixedUpdate()
         {
-            inRange = Physics.OverlapSphereNonAlloc(transform.position, attackRange, playerCol, GameManager.Instance.PlayerLayer) > 0;
-            
-            //WallCheck
-            Vector3 wallCheckPositionOffset = new ((extents.x + 0.05f) * transform.right.x, extents.y * 0.03f, 0);
-            wall = Physics.OverlapBoxNonAlloc(transform.position + wallCheckPositionOffset,
-                new Vector3(0.05f, extents.y * 0.97f, 0), wallCheck, Quaternion.identity, groundLayer) > 0;
-
-            if (!inRange) 
-                Move();
+            Move();
         }
 
         private void Move()
         {
+            //WallCheck
+            Vector3 wallCheckPositionOffset = new ((extents.x + 0.05f) * transform.right.x, extents.y * 0.03f, 0);
+            wall = Physics.OverlapBoxNonAlloc(transform.position + wallCheckPositionOffset,
+                new Vector3(0.05f, extents.y * 0.97f, 0), wallCheck, Quaternion.identity, groundLayer) > 0;
+            
+            
             //check if on ledge or facing wall
             if (!Physics.Raycast(transform.position - (Vector3.up * extents.y - Vector3.up * 0.05f) + transform.right * extents.x, Vector3.down, 0.2f,
                     groundLayer) || wall)
@@ -77,8 +72,26 @@
         private void OnTriggerEnter(Collider other)
         {
             if (other.gameObject.layer != GameManager.Instance.PlayerLayer) return;
+
+            if (CheckIfHitFromAbove(other))
+            {
+                TakeDamage(1, other.transform);
+                return;
+            }
             
             if (other.gameObject.TryGetComponent(out Player player))
                 player.TakeDamage(1, transform);
+        }
+
+        private bool CheckIfHitFromAbove(Collider other)
+        {
+            Vector3 dir = Vector3.Normalize(other.transform.position - transform.position);
+
+            //Checks if the player's origin is above the enemy
+            if (Vector3.Dot(transform.up, dir) < 0.85f)
+                return false;
+
+            //Checks if player is not inside the enemy
+            return !Physics.CheckSphere(transform.position, nonTriggerCollider.bounds.extents.x * 0.5f, 1 << GameManager.Instance.PlayerLayer);
         }
     }
