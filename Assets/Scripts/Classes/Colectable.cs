@@ -9,7 +9,7 @@ namespace Classes
 
         protected virtual void OnTriggerEnter(Collider other)
         {
-            if (!other.TryGetComponent<TCollector>(out TCollector collector))
+            if (!other.TryGetComponent(out TCollector collector))
                 return;
             
             Collect(collector);

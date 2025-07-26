@@ -9,7 +9,7 @@ namespace Powers
         private Rigidbody rb;
         private Player plr;
         private bool canDoubleJump;
-        private bool hasWallJump = false;
+        public bool HasWallJump = false;
 
         private const float JUMP_FORCE = 20;
         
@@ -19,6 +19,10 @@ namespace Powers
             plr = player;
             rb = player.GetComponent<Rigidbody>();
             plr.JumpAction.performed += DoubleJumpAction;
+            if (plr.CheckForPower<WallJump>())
+            {
+                HasWallJump = true;
+            }
         }
 
         public override void Deactivate(Player player)
@@ -28,7 +32,7 @@ namespace Powers
 
         private void DoubleJumpAction(InputAction.CallbackContext context)
         {
-            if (hasWallJump && (plr.IsWallLeft || plr.IsWallRight))
+            if (HasWallJump && (plr.IsWallLeft || plr.IsWallRight))
                 return;
             if (plr.IsGrounded || !canDoubleJump)
                 return;

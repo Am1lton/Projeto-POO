@@ -9,6 +9,7 @@
     public class Player : Entity
     {
         [SerializeField] private LayerMask groundLayer;
+        public LayerMask GroundLayer => groundLayer;
         [SerializeField] private Collider col;
         [SerializeField] private GameObject projectile;
         public GameObject Projectile => projectile;
@@ -47,8 +48,9 @@
             Idle = 0,
             Jumping = 5,
             Walking = 5, 
-            Dashing = 8,
             CanWalk = 7, //anything lower than this value lets the player walk while in its state, anything higher prevents movement
+            WallJumping = 8,
+            Dashing = 9,
             Hit = 10
         }
         public PlayerStates playerState =  PlayerStates.Idle;
@@ -74,12 +76,29 @@
             powers.Pop().Deactivate(this);
         }
         
+        public bool CheckForPower<TPowerType>(out TPowerType power) where TPowerType : Power
+        {
+            power = null;
+            foreach (Power pwr in powers)
+            {
+                if (pwr.GetType() == typeof(TPowerType))
+                {
+                    power = pwr as  TPowerType;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        
         public bool CheckForPower<TPowerType>() where TPowerType : Power
         {
-            foreach (Power power in powers)
+            foreach (Power pwr in powers)
             {
-                if (power.GetType() == typeof(TPowerType))
+                if (pwr.GetType() == typeof(TPowerType))
+                {
                     return true;
+                }
             }
 
             return false;

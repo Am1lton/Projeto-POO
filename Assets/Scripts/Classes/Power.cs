@@ -12,6 +12,7 @@
                 PowerTypes.Dash => new Dash(),
                 PowerTypes.Shoot => new Shoot(),
                 PowerTypes.DoubleJump => new DoubleJump(),
+                PowerTypes.WallJump => new WallJump(),
                 _ => null
             };
         }
@@ -21,6 +22,7 @@
     {
         Dash,
         Shoot,
-        DoubleJump
+        DoubleJump,
+        WallJump
     }
 }
