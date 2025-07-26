@@ -9,7 +9,10 @@
     public class Player : Entity
     {
         [SerializeField] private LayerMask groundLayer;
+        public LayerMask GroundLayer => groundLayer;
         [SerializeField] private Collider col;
+        [SerializeField] private GameObject projectile;
+        public GameObject Projectile => projectile;
         public Collider Col => col;
         [SerializeField] private Material material;
         
@@ -19,7 +22,9 @@
         // ReSharper disable once InconsistentNaming
         public InputActionAsset InputAsset;
         public InputAction MoveAction { get; private set; }
-        private InputAction jumpAction;
+        public InputAction JumpAction { get; private set; }
+        public InputAction DashAction { get; private set; }
+        public InputAction ShootAction { get; private set; }
         
         //Physics and movement
         private Rigidbody rb;
@@ -44,8 +49,9 @@
             Idle = 0,
             Jumping = 5,
             Walking = 5, 
-            Dashing = 8,
             CanWalk = 7, //anything lower than this value lets the player walk while in its state, anything higher prevents movement
+            WallJumping = 8,
+            Dashing = 9,
             Hit = 10
         }
         public PlayerStates playerState =  PlayerStates.Idle;
@@ -70,13 +76,43 @@
         {
             powers.Pop().Deactivate(this);
         }
+        
+        public bool CheckForPower<TPowerType>(out TPowerType power) where TPowerType : Power
+        {
+            power = null;
+            foreach (Power pwr in powers)
+            {
+                if (pwr.GetType() == typeof(TPowerType))
+                {
+                    power = pwr as  TPowerType;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        
+        public bool CheckForPower<TPowerType>() where TPowerType : Power
+        {
+            foreach (Power pwr in powers)
+            {
+                if (pwr.GetType() == typeof(TPowerType))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
         #endregion
         
         
         private void Awake()
         {
             MoveAction = InputAsset.FindAction("Move");
-            jumpAction = InputAsset.FindAction("Jump");
+            JumpAction = InputAsset.FindAction("Jump");
+            DashAction = InputAsset.FindAction("Dash");
+            ShootAction = InputAsset.FindAction("Shoot");
             
             if (!col)
                 col = GetComponent<Collider>();
@@ -129,7 +165,7 @@
                 if (playerState <= PlayerStates.CanWalk)
                     Move(desiredSpeed);
                 
-                if (isGrounded && jumpAction.IsPressed() && playerState <= PlayerStates.Jumping)
+                if (isGrounded && JumpAction.IsPressed() && playerState <= PlayerStates.Jumping)
                 {
                     playerState = PlayerStates.Jumping;
                     col.material = slipperyMaterial;
@@ -151,8 +187,8 @@
                 wallRight = Physics.OverlapBoxNonAlloc(transform.position + Vector3.right * (col.bounds.extents.x + 0.01f),
                     new Vector3(0.01f, col.bounds.extents.y * 0.6f, 0), colliderCheck, Quaternion.identity, groundLayer) > 0;
             }
-            
-            public void Move(float desiredSpeed)
+
+            private void Move(float desiredSpeed)
             {
                 if (isGrounded && playerState <= PlayerStates.Walking) playerState = PlayerStates.Walking;
 

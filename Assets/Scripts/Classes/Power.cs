@@ -7,19 +7,22 @@
 
         public static Power GetPower(PowerTypes type)
         {
-            switch (type)
+            return type switch
             {
-                case PowerTypes.Dash:
-                    return new Dash();
-                    break;
-                default:
-                    return null;
-            }
+                PowerTypes.Dash => new Dash(),
+                PowerTypes.Shoot => new Shoot(),
+                PowerTypes.DoubleJump => new DoubleJump(),
+                PowerTypes.WallJump => new WallJump(),
+                _ => null
+            };
         }
     }
 
     public enum PowerTypes : byte
     {
-        Dash
+        Dash,
+        Shoot,
+        DoubleJump,
+        WallJump
     }
 }
