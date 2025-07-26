@@ -11,6 +11,7 @@
             {
                 PowerTypes.Dash => new Dash(),
                 PowerTypes.Shoot => new Shoot(),
+                PowerTypes.DoubleJump => new DoubleJump(),
                 _ => null
             };
         }
@@ -19,6 +20,7 @@
     public enum PowerTypes : byte
     {
         Dash,
-        Shoot
+        Shoot,
+        DoubleJump
     }
 }

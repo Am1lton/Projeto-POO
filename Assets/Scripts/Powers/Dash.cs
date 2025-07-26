@@ -12,7 +12,6 @@ namespace Powers
         
         private Rigidbody rb;
         private Player plr;
-        private InputAction playerDashAction;
 
         private bool canDash = true;
 
@@ -23,13 +22,12 @@ namespace Powers
         {
             rb = player.GetComponent<Rigidbody>();
             plr = player;
-            playerDashAction = player.InputAsset.FindAction("Dash");
-            playerDashAction.performed += DashAbility;
+            plr.DashAction.performed += DashAbility;
         }
 
         public override void Deactivate(Player player)
         {
-            playerDashAction.performed -= DashAbility;
+            plr.DashAction.performed -= DashAbility;
             plr.StopCoroutine(coroutine);
         }
 

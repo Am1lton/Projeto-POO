@@ -21,7 +21,8 @@
         // ReSharper disable once InconsistentNaming
         public InputActionAsset InputAsset;
         public InputAction MoveAction { get; private set; }
-        private InputAction jumpAction;
+        public InputAction JumpAction { get; private set; }
+        public InputAction DashAction { get; private set; }
         
         //Physics and movement
         private Rigidbody rb;
@@ -72,13 +73,24 @@
         {
             powers.Pop().Deactivate(this);
         }
+        
+        public bool CheckForPower<TPowerType>() where TPowerType : Power
+        {
+            foreach (Power power in powers)
+            {
+                if (power.GetType() == typeof(TPowerType))
+                    return true;
+            }
+
+            return false;
+        }
         #endregion
         
         
         private void Awake()
         {
             MoveAction = InputAsset.FindAction("Move");
-            jumpAction = InputAsset.FindAction("Jump");
+            JumpAction = InputAsset.FindAction("Jump");
             
             if (!col)
                 col = GetComponent<Collider>();
@@ -131,7 +143,7 @@
                 if (playerState <= PlayerStates.CanWalk)
                     Move(desiredSpeed);
                 
-                if (isGrounded && jumpAction.IsPressed() && playerState <= PlayerStates.Jumping)
+                if (isGrounded && JumpAction.IsPressed() && playerState <= PlayerStates.Jumping)
                 {
                     playerState = PlayerStates.Jumping;
                     col.material = slipperyMaterial;
