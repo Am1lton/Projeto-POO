@@ -1,13 +1,14 @@
-﻿	using System.Collections;
+﻿    using System.Collections;
     using System.Collections.Generic;
 	using Powers;
     using UnityEngine;
     using UnityEngine.InputSystem;
-    using UnityEngine.Serialization;
+    using UnityEngine.SceneManagement;
 
     [RequireComponent(typeof(Rigidbody))]
     public class Player : Entity
     {
+        //References
         [SerializeField] private LayerMask groundLayer;
         public LayerMask GroundLayer => groundLayer;
         [SerializeField] private Collider col;
@@ -15,11 +16,11 @@
         public GameObject Projectile => projectile;
         public Collider Col => col;
         [SerializeField] private Material material;
+        [SerializeField] private RectTransform playerGUI;
         
-        [FormerlySerializedAs("Gold")] public int gold;
+        public static int Score;
         
         //player input
-        // ReSharper disable once InconsistentNaming
         public InputActionAsset InputAsset;
         public InputAction MoveAction { get; private set; }
         public InputAction JumpAction { get; private set; }
@@ -59,6 +60,7 @@
         
         //PowerUps
         private Stack<Power> powers = new Stack<Power>();
+        private Dictionary<PowerTypes, PowerCell> powerCellsGUI = new(); 
 
         #region PowerUps
         public void AddPower(Power power)
@@ -68,13 +70,24 @@
                 if (power.GetType() == playerPower.GetType())
                     return;
             }
+            
             powers.Push(power);
+            
+            if (powerCellsGUI.TryGetValue(Power.GetPowerType(power), out PowerCell cell))
+                cell.gameObject.SetActive(true);
+            
             power.Activate(this);
         }
 
         private void RemoveLatestPower()
         {
-            powers.Pop().Deactivate(this);
+            Power pwr = powers.Pop();
+            
+            if (powerCellsGUI.TryGetValue(Power.GetPowerType(pwr), out PowerCell cell))
+                cell.gameObject.SetActive(false);
+            
+            pwr.Deactivate(this);
+            
         }
         
         public bool CheckForPower<TPowerType>(out TPowerType power) where TPowerType : Power
@@ -119,8 +132,18 @@
             
             rb = GetComponent<Rigidbody>();
             rb.freezeRotation = true;
+
+            foreach (PowerCell powerCell in playerGUI.GetComponentsInChildren<PowerCell>(true))
+            {
+                powerCellsGUI.TryAdd(powerCell.PowerType, powerCell);
+                
+                powerCell.gameObject.SetActive(false);
+            }
         }
 
+        private void OnEnable() => JumpAction.performed += Jump;
+        private void OnDisable() => JumpAction.performed -= Jump;
+        
         //Debug
         private void OnDrawGizmosSelected()
         {
@@ -141,7 +164,7 @@
 
         private void Update()
         {
-            transform.right = MoveAction.ReadValue<float>() switch
+            transform.right = rb.linearVelocity.x switch
             {
                 > 0 => Vector3.right,
                 < 0 => Vector3.left,
@@ -165,16 +188,17 @@
                 if (playerState <= PlayerStates.CanWalk)
                     Move(desiredSpeed);
                 
-                if (isGrounded && JumpAction.IsPressed() && playerState <= PlayerStates.Jumping)
-                {
-                    playerState = PlayerStates.Jumping;
-                    col.material = slipperyMaterial;
-                    rb.linearVelocity = Vector3.right * rb.linearVelocity.x;
-                    rb.AddForce(Vector3.up * jumpForce, ForceMode.VelocityChange);
-                }
-                
             }
-            
+
+            private void Jump(InputAction.CallbackContext context)
+            {
+                if (!isGrounded || playerState > PlayerStates.Jumping) return;
+                
+                playerState = PlayerStates.Jumping;
+                col.material = slipperyMaterial;
+                rb.linearVelocity = Vector3.right * rb.linearVelocity.x;
+                rb.AddForce(Vector3.up * jumpForce, ForceMode.VelocityChange);
+            }
             
             private void ObstacleCollisionCheck()
             {
@@ -215,21 +239,20 @@
             }
         #endregion
 
+        
+        #region TakingDamage and Dying
         public override void TakeDamage(int damage, Transform attacker)
         {
             if (damage <= 0)
                 return;
             
-            //while whe don't have a lot of powers
-            StartCoroutine(DamageJump(attacker));
-            StartCoroutine(InvincibilityFrame());
-            
-            /*
             if (powers.Count > 0)
             {
                 if (playerState <= PlayerStates.Hit)
                 {
                     playerState = PlayerStates.Idle;
+                    StartCoroutine(DamageJump(attacker));
+                    StartCoroutine(InvincibilityFrame());
                 }
                 
                 
@@ -237,7 +260,11 @@
             }
             else
                 Die();
-            */
+        }
+
+        protected override void Die()
+        {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
 
         private IEnumerator DamageJump(Transform attacker)
@@ -255,7 +282,7 @@
             {
                 yield return null;
             }
-
+            
             playerState = PlayerStates.Idle;
         }
 
@@ -278,5 +305,12 @@
             material.color = startColor;
             
             gameObject.layer = GameManager.Instance.PlayerLayer;
+        }
+        #endregion
+        
+        public static void AddScore(int amount)
+        {
+            Score += amount;
+            GUIManager.Instance.UpdateScore();
         }
     }

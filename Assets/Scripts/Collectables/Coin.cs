@@ -6,7 +6,7 @@ namespace Collectables
     {
         protected override void Collect(Player player)
         {
-            player.gold += content;
+            Player.AddScore(content);
         }
     }
 }
