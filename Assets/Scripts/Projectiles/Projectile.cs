@@ -37,16 +37,11 @@ namespace Projectiles
             {
                 foreach (RaycastHit hit in Hits)
                 {
-                    if (hit.collider.gameObject.layer != OwnerLayer)
-                        CollideWith(hit.collider);
-                    else
-                    {
-                        transform.position += transform.right * hit.distance;
-                        break;
-                    }
+                    if (hit.collider.gameObject.layer == OwnerLayer) continue;
+                    
+                    transform.position += transform.right * hit.distance;
+                    return;
                 }
-                
-                
             }
             
             transform.position += transform.right * (speed * Time.deltaTime);
@@ -54,6 +49,7 @@ namespace Projectiles
 
         private void OnTriggerEnter(Collider other)
         {
+            Debug.Log("collided from trigger");
             if (other.gameObject.layer == OwnerLayer) return;
             
             CollideWith(other);
@@ -61,7 +57,7 @@ namespace Projectiles
 
         protected virtual void CollideWith(Collider other)
         {
-            if (TryGetComponent(out Entity entity))
+            if (other.TryGetComponent(out Entity entity))
             {
                 entity.TakeDamage(damage, transform);
             }
