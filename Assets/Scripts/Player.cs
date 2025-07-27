@@ -1,4 +1,5 @@
-﻿	using System.Collections;
+﻿	using System;
+    using System.Collections;
     using System.Collections.Generic;
 	using Powers;
     using UnityEngine;
@@ -16,7 +17,7 @@
         public Collider Col => col;
         [SerializeField] private Material material;
         
-        [FormerlySerializedAs("Gold")] public int gold;
+        public static int Score;
         
         //player input
         // ReSharper disable once InconsistentNaming
@@ -255,7 +256,7 @@
             {
                 yield return null;
             }
-
+            
             playerState = PlayerStates.Idle;
         }
 
@@ -278,5 +279,11 @@
             material.color = startColor;
             
             gameObject.layer = GameManager.Instance.PlayerLayer;
+        }
+
+        public static void AddScore(int amount)
+        {
+            Score += amount;
+            GUIManager.Instance.UpdateScore();
         }
     }

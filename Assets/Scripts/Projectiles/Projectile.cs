@@ -49,7 +49,6 @@ namespace Projectiles
 
         private void OnTriggerEnter(Collider other)
         {
-            Debug.Log("collided from trigger");
             if (other.gameObject.layer == OwnerLayer) return;
             
             CollideWith(other);
