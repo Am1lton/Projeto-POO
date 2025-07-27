@@ -1,11 +1,14 @@
 ﻿using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))]
+namespace Enemies
+{
+    [RequireComponent(typeof(Rigidbody))]
     public class Enemy : Entity
     {
         [SerializeField] private Collider nonTriggerCollider;
         [SerializeField] protected LayerMask groundLayer;
         [SerializeField] private float moveSpeed;
+        [SerializeField] private int scoreGivenOnDeath;
 
         private Vector3 extents;
         private Rigidbody rb;
@@ -89,10 +92,19 @@
             Vector3 dir = Vector3.Normalize(other.transform.position - transform.position);
 
             //Checks if the player's origin is above the enemy
-            if (Vector3.Dot(transform.up, dir) < 0.85f)
+            if (Vector3.Dot(transform.up, dir) < 0.7f)
+            {
                 return false;
+            }
 
-            //Checks if player is not inside the enemy
-            return !Physics.CheckSphere(transform.position, nonTriggerCollider.bounds.extents.x * 0.5f, 1 << GameManager.Instance.PlayerLayer);
+            //Checks if player is not inside the enemy, not working properly because it's a trigger
+            return true;//!Physics.CheckSphere(transform.position, nonTriggerCollider.bounds.extents.x * 0.3f, 1 << GameManager.Instance.PlayerLayer);
+        }
+
+        protected override void Die()
+        {
+            Player.AddScore(scoreGivenOnDeath);
+            base.Die();
         }
     }
+}

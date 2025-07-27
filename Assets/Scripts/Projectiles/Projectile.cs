@@ -40,6 +40,7 @@ namespace Projectiles
                     if (hit.collider.gameObject.layer == OwnerLayer) continue;
                     
                     transform.position += transform.right * hit.distance;
+                    CollideWith(hit.collider);
                     return;
                 }
             }
@@ -49,9 +50,9 @@ namespace Projectiles
 
         private void OnTriggerEnter(Collider other)
         {
-            if (other.gameObject.layer == OwnerLayer) return;
+            //if (other.gameObject.layer == OwnerLayer) return;
             
-            CollideWith(other);
+            //CollideWith(other);
         }
 
         protected virtual void CollideWith(Collider other)

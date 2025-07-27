@@ -180,3 +180,4 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   moveSpeed: 2
+  scoreGivenOnDeath: 10

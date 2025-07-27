@@ -15,11 +15,22 @@
                 PowerTypes.WallJump => new WallJump(),
                 _ => null
             };
+        }public static PowerTypes GetPowerType(Power type)
+        {
+            return type switch
+            {
+                Dash => PowerTypes.Dash,
+                DoubleJump => PowerTypes.DoubleJump,
+                WallJump => PowerTypes.WallJump,
+                Shoot => PowerTypes.Shoot,
+                _ => PowerTypes.None
+            };
         }
     }
 
     public enum PowerTypes : byte
     {
+        None = 0,
         Dash,
         Shoot,
         DoubleJump,
