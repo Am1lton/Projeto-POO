@@ -4,7 +4,6 @@
     using UnityEngine;
     using UnityEngine.InputSystem;
     using UnityEngine.SceneManagement;
-    using UnityEngine.UI;
 
     [RequireComponent(typeof(Rigidbody))]
     public class Player : Entity
