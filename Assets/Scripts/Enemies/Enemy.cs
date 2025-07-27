@@ -1,11 +1,10 @@
 ﻿using UnityEngine;
-using UnityEngine.Serialization;
 
 [RequireComponent(typeof(Rigidbody))]
     public class Enemy : Entity
     {
         [SerializeField] private Collider nonTriggerCollider;
-        [SerializeField] private LayerMask groundLayer;
+        [SerializeField] protected LayerMask groundLayer;
         [SerializeField] private float moveSpeed;
 
         private Vector3 extents;
@@ -76,6 +75,8 @@ using UnityEngine.Serialization;
             if (CheckIfHitFromAbove(other))
             {
                 TakeDamage(1, other.transform);
+                if (other.TryGetComponent(out Rigidbody rigidBody))
+                    rigidBody.linearVelocity = new Vector3(rigidBody.linearVelocity.x, 20, 0);
                 return;
             }
             
