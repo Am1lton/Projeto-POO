@@ -16,6 +16,11 @@
             if (Instance == null)
                 Instance = this;
             else if (Instance != this)
+            {
                 Destroy(this);
+                return;
+            }
+
+            Player.Score = 0;
         }
     }

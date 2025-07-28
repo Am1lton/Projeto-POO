@@ -25,11 +25,11 @@ namespace Collectables
         private IEnumerator Cooldown()
         {
             yield return new WaitForSeconds(5);
-            
+
             if (TryGetComponent( out MeshRenderer meshRenderer))
-                meshRenderer.enabled = false;
+                meshRenderer.enabled = true;
             if (TryGetComponent( out Collider col))
-                col.enabled = false;
+                col.enabled = true;
         }
     }
 }

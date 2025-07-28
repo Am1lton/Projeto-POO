@@ -164,14 +164,28 @@
 
         private void Update()
         {
-            transform.right = rb.linearVelocity.x switch
-            {
-                > 0 => Vector3.right,
-                < 0 => Vector3.left,
-                _ => transform.right
-            };
-
             col.material = isGrounded ? normalMaterial : slipperyMaterial;
+
+            if (playerState > PlayerStates.CanWalk)
+            {
+                transform.right = rb.linearVelocity.x switch
+                {
+                    > 0 => Vector3.right,
+                    < 0 => Vector3.left,
+                    _ => transform.right
+                };
+            }
+            else
+            {
+                transform.right = MoveAction.ReadValue<float>() switch
+                {
+                    > 0 => Vector3.right,
+                    < 0 => Vector3.left,
+                    _ => transform.right
+                };
+            }
+            
+
         }
         
         #region Movement and Collision
