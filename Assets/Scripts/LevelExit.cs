@@ -8,7 +8,7 @@ public class LevelExit : MonoBehaviour
         
         private void Update()
         {
-            transform.localRotation = Quaternion.Slerp(Quaternion.identity, Quaternion.Euler(90, 90, 0), time);
+            transform.localRotation = Quaternion.Slerp(Quaternion.identity, Quaternion.Euler(90, 90, -90), time);
             
             if (time >= 1)
                 time = 0;
