@@ -18,7 +18,9 @@
         [SerializeField] private Material material;
         [SerializeField] private RectTransform playerGUI;
         
-        public static int Score;
+        public static int Score {get; private set;}
+        
+        public static void ResetScore() => Score = 0;
         
         //player input
         public InputActionAsset InputAsset;

@@ -21,6 +21,6 @@
                 return;
             }
 
-            Player.Score = 0;
+            Player.ResetScore();
         }
     }
