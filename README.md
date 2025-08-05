@@ -10,7 +10,7 @@
  - ## Player Movement
    Surprisingly for me, coding the player movement was by far the most challenging task. Working with unity physics and getting collision to work how I want was so time consuming that I've decided not to use unity physics on the dash and bouncing ball scripts, which has led to even more headache in the future.
    
-   Maybe next time I make a movement script I'll think about using something I learned called "Move and Collide", from what I've seen so far I'd  use physics functions to project my character in the direction of the movement and correct it's movement in case of collision, effectively "sliding" through surfaces. It seems very complicated but I like having so much control over how my character move and interact with the environment.
+   Maybe next time I make a movement script I'll think about using something I learned called "Collide and Slide", from what I've seen so far I'd  use physics functions to project my character in the direction of the movement and correct it's movement in case of collision, effectively "sliding" through surfaces. It seems very complicated but I like having so much control over how my character move and interact with the environment.
 
 - ## Enemy
 	The enemies were simple enough, I reused some things/ideas from the player movement but adapted to the enemies ledge and wall checks.
@@ -28,7 +28,7 @@
 	These were easy... usually when I think something is going to be easy it ends up being pretty hard but after all the trouble with the dash and bouncing projectile those two were incredibly easy, besides, not much to say here.
 	
 	# Final Thoughts
-	This project is far from finished, I still have much to do, such as: Multiplayer, more powers, and trying out that "move and collide". Also I tried commenting more on my code and although I did comment more in the beginning the more I wrote the less I commented, It is still something I need to improve a lot.  
+	This project is far from finished, I still have much to do, such as: Multiplayer, more powers, and trying out that "Collide and slide". Also I tried commenting more on my code and although I did comment more in the beginning the more I wrote the less I commented, It is still something I need to improve a lot.  
 
 
 
