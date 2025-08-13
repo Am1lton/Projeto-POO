@@ -304,7 +304,7 @@
 
         private IEnumerator InvincibilityFrame()
         {
-            gameObject.layer = GameManager.Instance.InvincibleLayer;
+            gameObject.layer = GameManager.Instance.invincibleLayer;
             float timer = 0f;
             Color startColor = material.color;
             
@@ -320,7 +320,7 @@
 
             material.color = startColor;
             
-            gameObject.layer = GameManager.Instance.PlayerLayer;
+            gameObject.layer = GameManager.Instance.playerLayer;
         }
         #endregion
         

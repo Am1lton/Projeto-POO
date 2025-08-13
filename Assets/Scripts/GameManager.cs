@@ -6,8 +6,8 @@
         [SerializeField] public int playerLayer;
         [SerializeField] public int invincibleLayer;
         
-        public int PlayerLayer => playerLayer;
-        public int InvincibleLayer =>  invincibleLayer;
+        public LayerMask PlayerMask => 1 << playerLayer;
+        public LayerMask InvincibleMask =>  1 << invincibleLayer;
         
         public static GameManager Instance {get; private set;}
 
@@ -22,5 +22,15 @@
             }
 
             Player.ResetScore();
+        }
+        
+        private void OnValidate()
+        {
+            if (Instance == null)
+                Instance = this;
+            else if (Instance != this)
+            {
+                Destroy(this);
+            }
         }
     }

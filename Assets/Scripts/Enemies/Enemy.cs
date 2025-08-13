@@ -73,7 +73,7 @@ namespace Enemies
 
         private void OnTriggerEnter(Collider other)
         {
-            if (other.gameObject.layer != GameManager.Instance.PlayerLayer) return;
+            if (other.gameObject.layer != GameManager.Instance.playerLayer) return;
 
             if (CheckIfHitFromAbove(other))
             {
