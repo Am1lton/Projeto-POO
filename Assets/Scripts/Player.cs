@@ -11,10 +11,12 @@
         //References
         [SerializeField] private LayerMask groundLayer;
         public LayerMask GroundLayer => groundLayer;
+
         [SerializeField] private Collider col;
         [SerializeField] private GameObject projectile;
         public GameObject Projectile => projectile;
         public Collider Col => col;
+
         [SerializeField] private Material material;
         [SerializeField] private RectTransform playerGUI;
         

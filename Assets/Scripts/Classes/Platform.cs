@@ -3,41 +3,26 @@ using UnityEngine;
 [RequireComponent(typeof(AudioSource))]
 public class Platform : MonoBehaviour
 {
-    [SerializeField] private BoxCollider playerCheckArea;
-    [SerializeField] private float ledgeSoundThreshold = 0.15f;
-    
     private AudioSource audioSource;
-    private bool isPlayerOnTop = false;
-    private Transform player;
+    private Coroutine coroutine;
+    private const float FADE_IN_OUT_DURATION = 1f;
     
     private void Awake()
     {
         audioSource = GetComponent<AudioSource>();
-        audioSource.volume = 0;
-        audioSource.Stop();
-    }
-    
-    private void FixedUpdate()
-    {
-        if (!isPlayerOnTop) return;
-        
-        
-        float distance = Mathf.Abs(player.position.x - transform.position.x) / playerCheckArea.bounds.extents.x;
-        Debug.Log(distance);
-        audioSource.volume = Mathf.Clamp01((distance - (1 - ledgeSoundThreshold)) / ledgeSoundThreshold);
+        audioSource.Pause();
     }
 
     protected virtual void OnTriggerEnter(Collider other)
     {
-        isPlayerOnTop = true;
-        player = other.transform;
-        audioSource.Play();
+        if (coroutine != null) StopCoroutine(coroutine);
+        if (!audioSource.isPlaying) audioSource.UnPause();
+        coroutine = StartCoroutine(Utils.LerpVolume(audioSource, audioSource.volume, 1, FADE_IN_OUT_DURATION));
     }
 
     protected virtual void OnTriggerExit(Collider other)
     {
-        isPlayerOnTop = false;
-        player = null;
-        audioSource.Pause();
+        if (coroutine != null) StopCoroutine(coroutine);
+        coroutine = StartCoroutine(Utils.LerpVolume(audioSource, audioSource.volume, 0, FADE_IN_OUT_DURATION, true));
     }
 }
