@@ -4,6 +4,7 @@
     using UnityEngine;
     using UnityEngine.InputSystem;
     using UnityEngine.SceneManagement;
+    using UnityEngine.Serialization;
 
     [RequireComponent(typeof(Rigidbody))]
     public class Player : Entity
@@ -11,6 +12,7 @@
         //References
         [SerializeField] private LayerMask groundLayer;
         public LayerMask GroundLayer => groundLayer;
+        [SerializeField] private AudioSource ledgeAudioSource;
 
         [SerializeField] private Collider col;
         [SerializeField] private GameObject projectile;
@@ -25,7 +27,7 @@
         public static void ResetScore() => Score = 0;
         
         //player input
-        public InputActionAsset InputAsset;
+        [FormerlySerializedAs("InputAsset")] public InputActionAsset inputAsset;
         public InputAction MoveAction { get; private set; }
         public InputAction JumpAction { get; private set; }
         public InputAction DashAction { get; private set; }
@@ -39,6 +41,10 @@
         public bool IsWallLeft => wallLeft;
         private bool wallRight;
         public bool IsWallRight => wallRight;
+        private bool ledgeForward = false;
+        private bool ledgeBack = false;
+        private const float LEDGE_DETECTION_RANGE = 2f;
+        private float lastLedgeX = 0;
         [SerializeField] private PhysicsMaterial normalMaterial;
         [SerializeField] private PhysicsMaterial slipperyMaterial;
         [SerializeField] private float jumpForce = 20f;
@@ -53,7 +59,7 @@
         {
             Idle = 0,
             Jumping = 5,
-            Walking = 5, 
+            Walking = 4,
             CanWalk = 7, //anything lower than this value lets the player walk while in its state, anything higher prevents movement
             WallJumping = 8,
             Dashing = 9,
@@ -126,10 +132,10 @@
         
         private void Awake()
         {
-            MoveAction = InputAsset.FindAction("Move");
-            JumpAction = InputAsset.FindAction("Jump");
-            DashAction = InputAsset.FindAction("Dash");
-            ShootAction = InputAsset.FindAction("Shoot");
+            MoveAction = inputAsset.FindAction("Move");
+            JumpAction = inputAsset.FindAction("Jump");
+            DashAction = inputAsset.FindAction("Dash");
+            ShootAction = inputAsset.FindAction("Shoot");
             
             if (!col)
                 col = GetComponent<Collider>();
@@ -147,6 +153,13 @@
 
         private void OnEnable() => JumpAction.performed += Jump;
         private void OnDisable() => JumpAction.performed -= Jump;
+
+        private void Start()
+        {
+            ledgeAudioSource.Play();
+            ledgeAudioSource.loop = true;
+            ledgeAudioSource.Pause();
+        }
         
         //Debug
         private void OnDrawGizmosSelected()
@@ -164,6 +177,17 @@
             //Wall Right Gizmo
             Gizmos.DrawWireCube(transform.position + Vector3.right * (col.bounds.extents.x + 0.01f),
                 new Vector3(0.02f, col.bounds.size.y * 0.6f, 0));
+            
+            //LedgeDetectionLine
+            Gizmos.color = Color.magenta;
+            Gizmos.DrawWireCube(transform.position + new Vector3(
+                LEDGE_DETECTION_RANGE * -transform.right.x,
+                -col.bounds.extents.y + 0.1f, 0), new Vector3(0.2f, 0.2f, 0));
+            Gizmos.DrawWireCube(transform.position + new Vector3(
+                LEDGE_DETECTION_RANGE * transform.right.x,
+                -col.bounds.extents.y + 0.1f, 0), new Vector3(0.2f, 0.2f, 0));
+            
+            Gizmos.DrawLine(new Vector3(lastLedgeX, 0, 0), new Vector3(lastLedgeX, 1000, 0));
         }
 
         private void Update()
@@ -200,6 +224,60 @@
                 //Ground & Wall check
                 ObstacleCollisionCheck();
                 
+                //checking for ledge
+                {
+                    if (isGrounded)
+                    {
+                        ledgeBack = !Physics.CheckBox(transform.position + new Vector3(
+                                LEDGE_DETECTION_RANGE * -transform.right.x,
+                                -col.bounds.extents.y + 0.1f, 0), new Vector3(0.1f, 0.1f, 0), Quaternion.identity,
+                            groundLayer);
+                        
+                        ledgeForward = !Physics.CheckBox(transform.position + new Vector3(
+                                LEDGE_DETECTION_RANGE * transform.right.x,
+                                -col.bounds.extents.y + 0.1f, 0), new Vector3(0.1f, 0.1f, 0), Quaternion.identity,
+                            groundLayer);
+                    }
+                    else
+                    {
+                        ledgeForward = false;
+                        ledgeBack = false;
+                    }
+                    
+
+                    if (ledgeBack != ledgeForward)
+                    {
+                        Vector3 dir = ledgeBack ? -transform.right : transform.right;
+                        
+                        if (Physics.Raycast(transform.position + new Vector3(
+                                    LEDGE_DETECTION_RANGE * dir.x,
+                                    -col.bounds.extents.y - 0.1f, 0), -dir, out RaycastHit hit, LEDGE_DETECTION_RANGE,
+                                groundLayer))
+                        {
+                            lastLedgeX = hit.point.x;
+                        }
+                    }
+                    
+                    //setting volume based on distance
+                    if (ledgeForward != ledgeBack)
+                    {
+                        float dist = Mathf.Abs(transform.position.x - lastLedgeX) / LEDGE_DETECTION_RANGE;
+                        ledgeAudioSource.volume = 1 - dist;
+                    }
+                }
+                
+                //playing ledge audio
+                switch (ledgeForward != ledgeBack)
+                {
+                    case false when ledgeAudioSource.isPlaying:
+                        ledgeAudioSource.Pause();
+                        break;
+                    case true when !ledgeAudioSource.isPlaying:
+                        ledgeAudioSource.UnPause();
+                        break;
+                }
+                
+                
                 //Character movement
                 float desiredSpeed = MoveAction.ReadValue<float>() * maxSpeed;
                 
@@ -217,11 +295,20 @@
                 rb.linearVelocity = Vector3.right * rb.linearVelocity.x;
                 rb.AddForce(Vector3.up * jumpForce, ForceMode.VelocityChange);
             }
+
+            private void OnGrounded()
+            {
+                if (playerState <= PlayerStates.Jumping)
+                    playerState = PlayerStates.Idle;
+            }
             
             private void ObstacleCollisionCheck()
             {
+                bool wasGrounded = isGrounded;
                 isGrounded = Physics.OverlapBoxNonAlloc(transform.position + Vector3.down * (col.bounds.extents.y + 0.01f),
                     new Vector3(col.bounds.extents.x * 0.7f, 0.01f, 0), colliderCheck, Quaternion.identity, groundLayer) > 0;
+                if (!wasGrounded && isGrounded)
+                    OnGrounded();
                 
                 wallLeft = Physics.OverlapBoxNonAlloc(transform.position + Vector3.left * (col.bounds.extents.x + 0.01f),
                     new Vector3(0.01f, col.bounds.extents.y * 0.6f, 0), colliderCheck, Quaternion.identity, groundLayer) > 0;
