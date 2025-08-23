@@ -2,13 +2,22 @@
 
 namespace Enemies
 {
-    [RequireComponent(typeof(Rigidbody))]
+    [RequireComponent(typeof(Rigidbody), typeof(AudioSource))]
     public class Enemy : Entity
     {
+        [Header("Physics and Movement")]
         [SerializeField] private Collider nonTriggerCollider;
         [SerializeField] protected LayerMask groundLayer;
         [SerializeField] private float moveSpeed;
+        
+        [Header("Score")]
         [SerializeField] private int scoreGivenOnDeath;
+        
+        [Header("Audio")]
+        [SerializeField] private AudioSource audioSource;
+        
+        private const float MIN_AUDIO_DISTANCE = 25;
+        private const float AUDIO_PAN_SWITCH_DISTANCE = 10f;
 
         private Vector3 extents;
         private Rigidbody rb;
@@ -23,6 +32,10 @@ namespace Enemies
             extents = nonTriggerCollider.bounds.extents;
             extents.z = 0;
             nonTriggerCollider.excludeLayers = ~groundLayer;
+
+            audioSource.loop = true;
+            if (!audioSource.playOnAwake) audioSource.Play();
+            audioSource.Pause();
         }
 
         #region Debug
@@ -39,6 +52,24 @@ namespace Enemies
         
         protected virtual void FixedUpdate()
         {
+            if (Vector3.Distance(GameManager.Instance.CenterOfScreen.position, transform.position) < MIN_AUDIO_DISTANCE)
+            {
+                audioSource.UnPause();
+                
+                float panStereo = transform.position.x - GameManager.Instance.CenterOfScreen.position.x;
+                if (Mathf.Abs(panStereo) > AUDIO_PAN_SWITCH_DISTANCE)
+                    audioSource.panStereo = panStereo > 0 ? 1 : -1;
+                else
+                {
+                    audioSource.panStereo = panStereo != 0 ? panStereo / AUDIO_PAN_SWITCH_DISTANCE : 0;    
+                }
+                
+                audioSource.volume = 
+                    (MIN_AUDIO_DISTANCE - Vector3.Distance(GameManager.Instance.CenterOfScreen.position, transform.position)) / (MIN_AUDIO_DISTANCE * 0.9f);
+            }
+            else
+                audioSource.Pause();
+            
             Move();
         }
 

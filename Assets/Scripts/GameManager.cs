@@ -5,7 +5,9 @@
     {
         [SerializeField] public int playerLayer;
         [SerializeField] public int invincibleLayer;
+        [SerializeField] private Transform centerOfScreen;
         
+        public Transform  CenterOfScreen => centerOfScreen;
         public LayerMask PlayerMask => 1 << playerLayer;
         public LayerMask InvincibleMask =>  1 << invincibleLayer;
         

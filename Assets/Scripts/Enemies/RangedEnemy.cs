@@ -4,6 +4,7 @@ namespace Enemies
 {
     public class RangedEnemy : Enemy
     {
+        [Header("Ranged")]
         [SerializeField] private float range = 5;
         [SerializeField] private GameObject projectilePrefab;
         [SerializeField] private float projectileCooldown = 1f;
