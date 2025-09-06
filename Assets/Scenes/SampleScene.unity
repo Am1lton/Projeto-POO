@@ -2317,9 +2317,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ledgeAudioSource: {fileID: 1920439557}
   sfxAudioSource: {fileID: 763515366}
-  jumpStartSound: {fileID: 8300000, guid: ecc9e85fa3f68cc498f44e02b1f8fef3, type: 3}
+  jumpStartSound: {fileID: 8300000, guid: a738029bcc6efff4da56162c068ade0d, type: 3}
   jumpApexSound: {fileID: 8300000, guid: 6261c6114c053da42bf03ea493e427eb, type: 3}
   landingSound: {fileID: 8300000, guid: 66e3b920f83a76744acb35ea1a1afe58, type: 3}
+  powerCollectSound: {fileID: 8300000, guid: a64b3b7b6da78354d91a092e587d5ac2, type: 3}
   projectile: {fileID: 4469078474982458151, guid: f64ed51ae35edae41a4723b45a65f207, type: 3}
   material: {fileID: 2100000, guid: 463b57c272131ba409395ba5b449c6b2, type: 2}
   playerGUI: {fileID: 858953733}

@@ -4,7 +4,6 @@
     using UnityEngine;
     using UnityEngine.InputSystem;
     using UnityEngine.SceneManagement;
-    using UnityEngine.Serialization;
 
     [RequireComponent(typeof(Rigidbody))]
     public class Player : Entity
@@ -46,8 +45,9 @@
         public LayerMask GroundLayer => groundLayer;
         public float MaxSpeed => maxSpeed;
         private Collider[] colliderCheck =  new Collider[1];
-        
-        
+
+
+        private Coroutine controllerVibration;
         public GameObject Projectile => projectile;
         public Collider Col => col;
         public static int Score {get; private set;}
@@ -145,6 +145,8 @@
             JumpAction = inputAsset.FindAction("Jump");
             DashAction = inputAsset.FindAction("Dash");
             ShootAction = inputAsset.FindAction("Shoot");
+            
+            
             
             if (!col)
                 col = GetComponent<Collider>();
@@ -318,7 +320,14 @@
             private void OnGrounded()
             {
                 if (playerState == PlayerStates.Falling)
+                {
                     sfxAudioSource.PlayOneShot(landingSound, 0.5f);
+                    if (controllerVibration != null)
+                        StopCoroutine(controllerVibration);
+                    if (Gamepad.current != null) 
+                        controllerVibration = StartCoroutine(Utils.VibrateController(Gamepad.current, 0.1f,
+                        0.5f, 0.1f));
+                }
                 if (playerState <= PlayerStates.Jumping)
                     playerState = PlayerStates.Idle;
             }
@@ -369,6 +378,12 @@
         #region TakingDamage and Dying
         public override void TakeDamage(int damage, Transform attacker)
         {
+            if (controllerVibration != null)
+                StopCoroutine(controllerVibration);
+            if (Gamepad.current != null) 
+                controllerVibration = StartCoroutine(Utils.VibrateController(Gamepad.current, 0.2f,
+                0.2f, 0.5f));
+            
             if (damage <= 0)
                 return;
             
@@ -438,5 +453,15 @@
         {
             Score += amount;
             GUIManager.Instance.UpdateScore();
+        }
+
+        private void OnDestroy()
+        {
+            if (controllerVibration != null)
+            {
+                StopCoroutine(controllerVibration);
+                Gamepad.current.SetMotorSpeeds(0, 0);
+            }
+            
         }
     }
