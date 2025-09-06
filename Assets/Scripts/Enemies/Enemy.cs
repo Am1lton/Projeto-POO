@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 
 namespace Enemies
 {
@@ -15,6 +16,7 @@ namespace Enemies
         
         [Header("Audio")]
         [SerializeField] private AudioSource audioSource;
+        [SerializeField] private AudioClip deathSound;
         
         private const float MIN_AUDIO_DISTANCE = 25;
         private const float AUDIO_PAN_SWITCH_DISTANCE = 10f;
@@ -135,7 +137,20 @@ namespace Enemies
         protected override void Die()
         {
             Player.AddScore(scoreGivenOnDeath);
-            base.Die();
+            audioSource.clip = deathSound;
+            audioSource.loop = false;
+            audioSource.Play();
+            audioSource.time = 0;
+            GetComponent<Collider>().enabled = false;
+            GetComponent<MeshRenderer>().enabled = false;
+            StartCoroutine(WaitForAudio());
+        }
+
+        private IEnumerator WaitForAudio()
+        {
+            while (audioSource.isPlaying)
+                yield return null;
+            Destroy(audioSource.gameObject);
         }
     }
 }

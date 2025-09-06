@@ -270,6 +270,7 @@ MonoBehaviour:
   moveSpeed: 2
   scoreGivenOnDeath: 20
   audioSource: {fileID: 853686185521887766}
+  deathSound: {fileID: 8300000, guid: 44b8f9baae93e074395a18e743582d98, type: 3}
   range: 10
   projectilePrefab: {fileID: 1790904408868481864, guid: bfd8eaade4d82744dac81af7d5f81faf, type: 3}
   projectileCooldown: 1

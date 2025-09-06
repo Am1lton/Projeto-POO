@@ -10,30 +10,28 @@
     public class Player : Entity
     {
         //References
-        [SerializeField] private LayerMask groundLayer;
-        public LayerMask GroundLayer => groundLayer;
+        [Header("Audio/Sound Effects")]
         [SerializeField] private AudioSource ledgeAudioSource;
+        [SerializeField] private AudioSource sfxAudioSource;
+        [SerializeField] private AudioClip jumpStartSound;
+        [SerializeField] private AudioClip jumpApexSound;
+        [SerializeField] private AudioClip landingSound;
+        [SerializeField] private AudioClip powerCollectSound;
 
-        [SerializeField] private Collider col;
+        [Header("General References")]
         [SerializeField] private GameObject projectile;
-        public GameObject Projectile => projectile;
-        public Collider Col => col;
-
         [SerializeField] private Material material;
         [SerializeField] private RectTransform playerGUI;
         
-        public static int Score {get; private set;}
-        
-        public static void ResetScore() => Score = 0;
-        
-        //player input
-        [FormerlySerializedAs("InputAsset")] public InputActionAsset inputAsset;
-        public InputAction MoveAction { get; private set; }
-        public InputAction JumpAction { get; private set; }
-        public InputAction DashAction { get; private set; }
-        public InputAction ShootAction { get; private set; }
-        
-        //Physics and movement
+        [Header("Physics and Movement")]
+        [SerializeField] private Collider col;
+        [SerializeField] private PhysicsMaterial normalMaterial;
+        [SerializeField] private PhysicsMaterial slipperyMaterial;
+        [SerializeField] private LayerMask groundLayer;
+        [SerializeField] private float jumpForce = 20f;
+        [SerializeField] private float maxSpeed = 7f;
+        [SerializeField] private float extraGravity = 50f;
+        [SerializeField] private float invincibilityTime = 1f;
         private Rigidbody rb;
         private bool isGrounded;
         public bool IsGrounded => isGrounded;
@@ -45,25 +43,35 @@
         private bool ledgeBack = false;
         private const float LEDGE_DETECTION_RANGE = 2f;
         private float lastLedgeX = 0;
-        [SerializeField] private PhysicsMaterial normalMaterial;
-        [SerializeField] private PhysicsMaterial slipperyMaterial;
-        [SerializeField] private float jumpForce = 20f;
-        [SerializeField] private float maxSpeed = 7f;
-        [SerializeField] private float extraGravity = 50f;
-        [SerializeField] private float invincibilityTime = 1f;
+        public LayerMask GroundLayer => groundLayer;
         public float MaxSpeed => maxSpeed;
         private Collider[] colliderCheck =  new Collider[1];
+        
+        
+        public GameObject Projectile => projectile;
+        public Collider Col => col;
+        public static int Score {get; private set;}
+        
+        public static void ResetScore() => Score = 0;
+        
+        //player input
+        public InputActionAsset inputAsset;
+        public InputAction MoveAction { get; private set; }
+        public InputAction JumpAction { get; private set; }
+        public InputAction DashAction { get; private set; }
+        public InputAction ShootAction { get; private set; }
         
         //Player States system
         public enum PlayerStates
         {
             Idle = 0,
-            Jumping = 5,
-            Walking = 4,
-            CanWalk = 7, //anything lower than this value lets the player walk while in its state, anything higher prevents movement
-            WallJumping = 8,
-            Dashing = 9,
-            Hit = 10
+            Walking = 40,
+            Jumping = 50,
+            Falling = 49,
+            CanWalk = 70, //anything lower than this value lets the player walk while in its state, anything higher prevents movement
+            WallJumping = 80,
+            Dashing = 90,
+            Hit = 100
         }
         public PlayerStates playerState =  PlayerStates.Idle;
         
@@ -81,6 +89,7 @@
                     return;
             }
             
+            sfxAudioSource.PlayOneShot(powerCollectSound);
             powers.Push(power);
             
             if (powerCellsGUI.TryGetValue(Power.GetPowerType(power), out PowerCell cell))
@@ -219,6 +228,15 @@
         #region Movement and Collision
             private void FixedUpdate()
             {
+                if (playerState == PlayerStates.Jumping && rb.linearVelocity.y < 0.1f)
+                {
+                    playerState = PlayerStates.Falling;
+                    sfxAudioSource.PlayOneShot(jumpApexSound, 0.5f);
+                }
+                
+                if (rb.linearVelocity.y < -10f && playerState < PlayerStates.Falling)
+                    playerState = PlayerStates.Falling;
+                
                 rb.AddForce(Vector3.down * extraGravity, ForceMode.Acceleration);
                 
                 //Ground & Wall check
@@ -293,11 +311,14 @@
                 playerState = PlayerStates.Jumping;
                 col.material = slipperyMaterial;
                 rb.linearVelocity = Vector3.right * rb.linearVelocity.x;
-                rb.AddForce(Vector3.up * jumpForce, ForceMode.VelocityChange);
+                rb.linearVelocity += Vector3.up * jumpForce;
+                sfxAudioSource.PlayOneShot(jumpStartSound, 0.7f);
             }
 
             private void OnGrounded()
             {
+                if (playerState == PlayerStates.Falling)
+                    sfxAudioSource.PlayOneShot(landingSound, 0.5f);
                 if (playerState <= PlayerStates.Jumping)
                     playerState = PlayerStates.Idle;
             }

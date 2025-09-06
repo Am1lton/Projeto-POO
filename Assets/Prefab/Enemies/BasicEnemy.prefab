@@ -183,6 +183,7 @@ MonoBehaviour:
   moveSpeed: 2
   scoreGivenOnDeath: 10
   audioSource: {fileID: 2423764008260184132}
+  deathSound: {fileID: 8300000, guid: 44b8f9baae93e074395a18e743582d98, type: 3}
 --- !u!82 &2423764008260184132
 AudioSource:
   m_ObjectHideFlags: 0
