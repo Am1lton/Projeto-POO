@@ -9,7 +9,7 @@ namespace Powers
         private Rigidbody rb;
         private Player plr;
         private bool canDoubleJump;
-        public bool HasWallJump = false;
+        public bool HasWallJump;
 
         private const float JUMP_FORCE = 20;
         

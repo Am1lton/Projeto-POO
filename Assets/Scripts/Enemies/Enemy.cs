@@ -23,7 +23,7 @@ namespace Enemies
 
         private Vector3 extents;
         private Rigidbody rb;
-        private bool wall = false;
+        private bool wall;
         private readonly Collider[] wallCheck = new Collider[1];
         
         

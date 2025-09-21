@@ -4,7 +4,7 @@ using UnityEngine.SceneManagement;
 
 public class LevelExit : MonoBehaviour
     {
-        private float time = 0f;
+        private float time;
         
         private void Update()
         {

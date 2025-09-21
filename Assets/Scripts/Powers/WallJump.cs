@@ -37,13 +37,13 @@ namespace Powers
         private void WallJumpAbility(InputAction.CallbackContext context)
         {
             if (plr.IsGrounded || (!plr.IsWallLeft && !plr.IsWallRight) ||
-                plr.playerState > Player.PlayerStates.WallJumping) 
+                plr.PlayerState > Player.PlayerStates.WallJumping) 
                 return;
             
             rb.linearVelocity = plr.IsWallLeft ? new Vector3(1, 0.7f, 0) * WALL_JUMP_FORCE :
                 new Vector3(-1, 0.7f, 0) * WALL_JUMP_FORCE;
             
-            plr.playerState = Player.PlayerStates.WallJumping;
+            plr.PlayerState = Player.PlayerStates.WallJumping;
             plr.StartCoroutine(WallDistanceCheck(plr.IsWallLeft));
 
         }
@@ -64,7 +64,7 @@ namespace Powers
                 yield return null;
             }
             
-            plr.playerState = Player.PlayerStates.Idle;
+            plr.PlayerState = Player.PlayerStates.Idle;
         }
     }
 }

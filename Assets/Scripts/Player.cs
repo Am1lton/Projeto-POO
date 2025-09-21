@@ -1,9 +1,12 @@
-﻿    using System.Collections;
+﻿    using System;
+    using System.Collections;
     using System.Collections.Generic;
 	using Powers;
     using UnityEngine;
     using UnityEngine.InputSystem;
     using UnityEngine.SceneManagement;
+    using UnityEngine.Serialization;
+    using UnityEngine.UI;
 
     [RequireComponent(typeof(Rigidbody))]
     public class Player : Entity
@@ -11,16 +14,20 @@
         //References
         [Header("Audio/Sound Effects")]
         [SerializeField] private AudioSource ledgeAudioSource;
-        [SerializeField] private AudioSource sfxAudioSource;
+        [SerializeField] public AudioSource SfxAudioSource;
         [SerializeField] private AudioClip jumpStartSound;
         [SerializeField] private AudioClip jumpApexSound;
         [SerializeField] private AudioClip landingSound;
         [SerializeField] private AudioClip powerCollectSound;
+        [SerializeField] public AudioClip DashReadySound;
 
         [Header("General References")]
         [SerializeField] private GameObject projectile;
         [SerializeField] private Material material;
         [SerializeField] private RectTransform playerGUI;
+        
+        [Header("UI References")]
+        public Image DashIcon;
         
         [Header("Physics and Movement")]
         [SerializeField] private Collider col;
@@ -38,10 +45,10 @@
         public bool IsWallLeft => wallLeft;
         private bool wallRight;
         public bool IsWallRight => wallRight;
-        private bool ledgeForward = false;
-        private bool ledgeBack = false;
+        private bool ledgeForward;
+        private bool ledgeBack;
         private const float LEDGE_DETECTION_RANGE = 2f;
-        private float lastLedgeX = 0;
+        private float lastLedgeX;
         public LayerMask GroundLayer => groundLayer;
         public float MaxSpeed => maxSpeed;
         private Collider[] colliderCheck =  new Collider[1];
@@ -55,7 +62,7 @@
         public static void ResetScore() => Score = 0;
         
         //player input
-        public InputActionAsset inputAsset;
+        public InputActionAsset InputAsset;
         public InputAction MoveAction { get; private set; }
         public InputAction JumpAction { get; private set; }
         public InputAction DashAction { get; private set; }
@@ -73,7 +80,7 @@
             Dashing = 90,
             Hit = 100
         }
-        public PlayerStates playerState =  PlayerStates.Idle;
+        [NonSerialized] public PlayerStates PlayerState =  PlayerStates.Idle;
         
         
         //PowerUps
@@ -89,7 +96,7 @@
                     return;
             }
             
-            sfxAudioSource.PlayOneShot(powerCollectSound);
+            SfxAudioSource.PlayOneShot(powerCollectSound);
             powers.Push(power);
             
             if (powerCellsGUI.TryGetValue(Power.GetPowerType(power), out PowerCell cell))
@@ -141,10 +148,10 @@
         
         private void Awake()
         {
-            MoveAction = inputAsset.FindAction("Move");
-            JumpAction = inputAsset.FindAction("Jump");
-            DashAction = inputAsset.FindAction("Dash");
-            ShootAction = inputAsset.FindAction("Shoot");
+            MoveAction = InputAsset.FindAction("Move");
+            JumpAction = InputAsset.FindAction("Jump");
+            DashAction = InputAsset.FindAction("Dash");
+            ShootAction = InputAsset.FindAction("Shoot");
             
             
             
@@ -205,7 +212,7 @@
         {
             col.material = isGrounded ? normalMaterial : slipperyMaterial;
 
-            if (playerState > PlayerStates.CanWalk)
+            if (PlayerState > PlayerStates.CanWalk)
             {
                 transform.right = rb.linearVelocity.x switch
                 {
@@ -230,14 +237,14 @@
         #region Movement and Collision
             private void FixedUpdate()
             {
-                if (playerState == PlayerStates.Jumping && rb.linearVelocity.y < 0.1f)
+                if (PlayerState == PlayerStates.Jumping && rb.linearVelocity.y < 0.1f)
                 {
-                    playerState = PlayerStates.Falling;
-                    sfxAudioSource.PlayOneShot(jumpApexSound, 0.5f);
+                    PlayerState = PlayerStates.Falling;
+                    SfxAudioSource.PlayOneShot(jumpApexSound, 0.5f);
                 }
                 
-                if (rb.linearVelocity.y < -10f && playerState < PlayerStates.Falling)
-                    playerState = PlayerStates.Falling;
+                if (rb.linearVelocity.y < -10f && PlayerState < PlayerStates.Falling)
+                    PlayerState = PlayerStates.Falling;
                 
                 rb.AddForce(Vector3.down * extraGravity, ForceMode.Acceleration);
                 
@@ -301,35 +308,31 @@
                 //Character movement
                 float desiredSpeed = MoveAction.ReadValue<float>() * maxSpeed;
                 
-                if (playerState <= PlayerStates.CanWalk)
+                if (PlayerState <= PlayerStates.CanWalk)
                     Move(desiredSpeed);
                 
             }
 
             private void Jump(InputAction.CallbackContext context)
             {
-                if (!isGrounded || playerState > PlayerStates.Jumping) return;
+                if (!isGrounded || PlayerState > PlayerStates.Jumping) return;
                 
-                playerState = PlayerStates.Jumping;
+                PlayerState = PlayerStates.Jumping;
                 col.material = slipperyMaterial;
                 rb.linearVelocity = Vector3.right * rb.linearVelocity.x;
                 rb.linearVelocity += Vector3.up * jumpForce;
-                sfxAudioSource.PlayOneShot(jumpStartSound, 0.7f);
+                SfxAudioSource.PlayOneShot(jumpStartSound, 0.7f);
             }
 
             private void OnGrounded()
             {
-                if (playerState == PlayerStates.Falling)
+                if (PlayerState == PlayerStates.Falling)
                 {
-                    sfxAudioSource.PlayOneShot(landingSound, 0.5f);
-                    if (controllerVibration != null)
-                        StopCoroutine(controllerVibration);
-                    if (Gamepad.current != null) 
-                        controllerVibration = StartCoroutine(Utils.VibrateController(Gamepad.current, 0.1f,
-                        0.5f, 0.1f));
+                    SfxAudioSource.PlayOneShot(landingSound, 0.5f);
+                    VibrateController(0.1f, 0.5f, 0.1f);
                 }
-                if (playerState <= PlayerStates.Jumping)
-                    playerState = PlayerStates.Idle;
+                if (PlayerState <= PlayerStates.Jumping)
+                    PlayerState = PlayerStates.Idle;
             }
             
             private void ObstacleCollisionCheck()
@@ -349,7 +352,7 @@
 
             private void Move(float desiredSpeed)
             {
-                if (isGrounded && playerState <= PlayerStates.Walking) playerState = PlayerStates.Walking;
+                if (isGrounded && PlayerState <= PlayerStates.Walking) PlayerState = PlayerStates.Walking;
 
                 switch (desiredSpeed)
                 {
@@ -378,20 +381,16 @@
         #region TakingDamage and Dying
         public override void TakeDamage(int damage, Transform attacker)
         {
-            if (controllerVibration != null)
-                StopCoroutine(controllerVibration);
-            if (Gamepad.current != null) 
-                controllerVibration = StartCoroutine(Utils.VibrateController(Gamepad.current, 0.2f,
-                0.2f, 0.5f));
+            VibrateController(0.2f, 0.2f, 0.5f);
             
             if (damage <= 0)
                 return;
             
             if (powers.Count > 0)
             {
-                if (playerState <= PlayerStates.Hit)
+                if (PlayerState <= PlayerStates.Hit)
                 {
-                    playerState = PlayerStates.Idle;
+                    PlayerState = PlayerStates.Idle;
                     StartCoroutine(DamageJump(attacker));
                     StartCoroutine(InvincibilityFrame());
                 }
@@ -416,7 +415,7 @@
             rb.linearVelocity = Vector3.zero;
             rb.AddForce(dir, ForceMode.Impulse);
 
-            playerState = PlayerStates.Hit;
+            PlayerState = PlayerStates.Hit;
             yield return new WaitForSeconds(0.1f);
             
             while (!IsGrounded)
@@ -424,7 +423,7 @@
                 yield return null;
             }
             
-            playerState = PlayerStates.Idle;
+            PlayerState = PlayerStates.Idle;
         }
 
         private IEnumerator InvincibilityFrame()
@@ -459,9 +458,18 @@
         {
             if (controllerVibration != null)
             {
-                StopCoroutine(controllerVibration);
+                StopAllCoroutines();
                 Gamepad.current.SetMotorSpeeds(0, 0);
             }
             
+        }
+
+        public void VibrateController(float duration, float lowFrequency, float highFrequency, bool fade = false)
+        {
+            if (controllerVibration != null)
+                StopCoroutine(controllerVibration);
+            if (Gamepad.current != null) 
+                controllerVibration = StartCoroutine(Utils.VibrateController(Gamepad.current, duration,
+                    lowFrequency, highFrequency, fade));
         }
     }
