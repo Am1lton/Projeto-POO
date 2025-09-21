@@ -4,6 +4,7 @@ namespace Enemies
 {
     public class RangedEnemy : Enemy
     {
+        [Header("Ranged")]
         [SerializeField] private float range = 5;
         [SerializeField] private GameObject projectilePrefab;
         [SerializeField] private float projectileCooldown = 1f;
@@ -12,9 +13,9 @@ namespace Enemies
         private float projectileCooldownTimer;
         protected override void FixedUpdate()
         {
-            if (Physics.Raycast(transform.position, transform.right, out RaycastHit hit, range, 1 << GameManager.Instance.PlayerLayer | groundLayer))
+            if (Physics.Raycast(transform.position, transform.right, out RaycastHit hit, range, GameManager.Instance.PlayerMask | groundLayer))
             {
-                if (hit.collider.gameObject.layer == GameManager.Instance.PlayerLayer)
+                if (hit.collider.gameObject.layer == GameManager.Instance.playerLayer)
                 {
                     Shoot();
                     return;

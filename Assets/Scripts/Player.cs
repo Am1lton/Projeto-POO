@@ -1,23 +1,62 @@
-﻿    using System.Collections;
+﻿    using System;
+    using System.Collections;
     using System.Collections.Generic;
 	using Powers;
     using UnityEngine;
     using UnityEngine.InputSystem;
     using UnityEngine.SceneManagement;
+    using UnityEngine.Serialization;
+    using UnityEngine.UI;
 
     [RequireComponent(typeof(Rigidbody))]
     public class Player : Entity
     {
         //References
-        [SerializeField] private LayerMask groundLayer;
-        public LayerMask GroundLayer => groundLayer;
-        [SerializeField] private Collider col;
+        [Header("Audio/Sound Effects")]
+        [SerializeField] private AudioSource ledgeAudioSource;
+        [SerializeField] public AudioSource SfxAudioSource;
+        [SerializeField] private AudioClip jumpStartSound;
+        [SerializeField] private AudioClip jumpApexSound;
+        [SerializeField] private AudioClip landingSound;
+        [SerializeField] private AudioClip powerCollectSound;
+        [SerializeField] public AudioClip DashReadySound;
+
+        [Header("General References")]
         [SerializeField] private GameObject projectile;
-        public GameObject Projectile => projectile;
-        public Collider Col => col;
         [SerializeField] private Material material;
         [SerializeField] private RectTransform playerGUI;
         
+        [Header("UI References")]
+        public Image DashIcon;
+        
+        [Header("Physics and Movement")]
+        [SerializeField] private Collider col;
+        [SerializeField] private PhysicsMaterial normalMaterial;
+        [SerializeField] private PhysicsMaterial slipperyMaterial;
+        [SerializeField] private LayerMask groundLayer;
+        [SerializeField] private float jumpForce = 20f;
+        [SerializeField] private float maxSpeed = 7f;
+        [SerializeField] private float extraGravity = 50f;
+        [SerializeField] private float invincibilityTime = 1f;
+        private Rigidbody rb;
+        private bool isGrounded;
+        public bool IsGrounded => isGrounded;
+        private bool wallLeft;
+        public bool IsWallLeft => wallLeft;
+        private bool wallRight;
+        public bool IsWallRight => wallRight;
+        private bool ledgeForward;
+        private bool ledgeBack;
+        private const float LEDGE_DETECTION_RANGE = 2f;
+        private float lastLedgeX;
+        public LayerMask GroundLayer => groundLayer;
+        public float MaxSpeed => maxSpeed;
+        private Collider[] colliderCheck =  new Collider[1];
+
+
+        private Coroutine controllerVibration;
+        public GameObject Projectile => projectile;
+        public Collider Col => col;
         public static int Score {get; private set;}
         
         public static void ResetScore() => Score = 0;
@@ -29,35 +68,19 @@
         public InputAction DashAction { get; private set; }
         public InputAction ShootAction { get; private set; }
         
-        //Physics and movement
-        private Rigidbody rb;
-        private bool isGrounded;
-        public bool IsGrounded => isGrounded;
-        private bool wallLeft;
-        public bool IsWallLeft => wallLeft;
-        private bool wallRight;
-        public bool IsWallRight => wallRight;
-        [SerializeField] private PhysicsMaterial normalMaterial;
-        [SerializeField] private PhysicsMaterial slipperyMaterial;
-        [SerializeField] private float jumpForce = 20f;
-        [SerializeField] private float maxSpeed = 7f;
-        [SerializeField] private float extraGravity = 50f;
-        [SerializeField] private float invincibilityTime = 1f;
-        public float MaxSpeed => maxSpeed;
-        private Collider[] colliderCheck =  new Collider[1];
-        
         //Player States system
         public enum PlayerStates
         {
             Idle = 0,
-            Jumping = 5,
-            Walking = 5, 
-            CanWalk = 7, //anything lower than this value lets the player walk while in its state, anything higher prevents movement
-            WallJumping = 8,
-            Dashing = 9,
-            Hit = 10
+            Walking = 40,
+            Jumping = 50,
+            Falling = 49,
+            CanWalk = 70, //anything lower than this value lets the player walk while in its state, anything higher prevents movement
+            WallJumping = 80,
+            Dashing = 90,
+            Hit = 100
         }
-        public PlayerStates playerState =  PlayerStates.Idle;
+        [NonSerialized] public PlayerStates PlayerState =  PlayerStates.Idle;
         
         
         //PowerUps
@@ -73,6 +96,7 @@
                     return;
             }
             
+            SfxAudioSource.PlayOneShot(powerCollectSound);
             powers.Push(power);
             
             if (powerCellsGUI.TryGetValue(Power.GetPowerType(power), out PowerCell cell))
@@ -129,6 +153,8 @@
             DashAction = InputAsset.FindAction("Dash");
             ShootAction = InputAsset.FindAction("Shoot");
             
+            
+            
             if (!col)
                 col = GetComponent<Collider>();
             
@@ -145,6 +171,13 @@
 
         private void OnEnable() => JumpAction.performed += Jump;
         private void OnDisable() => JumpAction.performed -= Jump;
+
+        private void Start()
+        {
+            ledgeAudioSource.Play();
+            ledgeAudioSource.loop = true;
+            ledgeAudioSource.Pause();
+        }
         
         //Debug
         private void OnDrawGizmosSelected()
@@ -162,13 +195,24 @@
             //Wall Right Gizmo
             Gizmos.DrawWireCube(transform.position + Vector3.right * (col.bounds.extents.x + 0.01f),
                 new Vector3(0.02f, col.bounds.size.y * 0.6f, 0));
+            
+            //LedgeDetectionLine
+            Gizmos.color = Color.magenta;
+            Gizmos.DrawWireCube(transform.position + new Vector3(
+                LEDGE_DETECTION_RANGE * -transform.right.x,
+                -col.bounds.extents.y + 0.1f, 0), new Vector3(0.2f, 0.2f, 0));
+            Gizmos.DrawWireCube(transform.position + new Vector3(
+                LEDGE_DETECTION_RANGE * transform.right.x,
+                -col.bounds.extents.y + 0.1f, 0), new Vector3(0.2f, 0.2f, 0));
+            
+            Gizmos.DrawLine(new Vector3(lastLedgeX, 0, 0), new Vector3(lastLedgeX, 1000, 0));
         }
 
         private void Update()
         {
             col.material = isGrounded ? normalMaterial : slipperyMaterial;
 
-            if (playerState > PlayerStates.CanWalk)
+            if (PlayerState > PlayerStates.CanWalk)
             {
                 transform.right = rb.linearVelocity.x switch
                 {
@@ -193,33 +237,111 @@
         #region Movement and Collision
             private void FixedUpdate()
             {
+                if (PlayerState == PlayerStates.Jumping && rb.linearVelocity.y < 0.1f)
+                {
+                    PlayerState = PlayerStates.Falling;
+                    SfxAudioSource.PlayOneShot(jumpApexSound, 0.5f);
+                }
+                
+                if (rb.linearVelocity.y < -10f && PlayerState < PlayerStates.Falling)
+                    PlayerState = PlayerStates.Falling;
+                
                 rb.AddForce(Vector3.down * extraGravity, ForceMode.Acceleration);
                 
                 //Ground & Wall check
                 ObstacleCollisionCheck();
                 
+                //checking for ledge
+                {
+                    if (isGrounded)
+                    {
+                        ledgeBack = !Physics.CheckBox(transform.position + new Vector3(
+                                LEDGE_DETECTION_RANGE * -transform.right.x,
+                                -col.bounds.extents.y + 0.1f, 0), new Vector3(0.1f, 0.1f, 0), Quaternion.identity,
+                            groundLayer);
+                        
+                        ledgeForward = !Physics.CheckBox(transform.position + new Vector3(
+                                LEDGE_DETECTION_RANGE * transform.right.x,
+                                -col.bounds.extents.y + 0.1f, 0), new Vector3(0.1f, 0.1f, 0), Quaternion.identity,
+                            groundLayer);
+                    }
+                    else
+                    {
+                        ledgeForward = false;
+                        ledgeBack = false;
+                    }
+                    
+
+                    if (ledgeBack != ledgeForward)
+                    {
+                        Vector3 dir = ledgeBack ? -transform.right : transform.right;
+                        
+                        if (Physics.Raycast(transform.position + new Vector3(
+                                    LEDGE_DETECTION_RANGE * dir.x,
+                                    -col.bounds.extents.y - 0.1f, 0), -dir, out RaycastHit hit, LEDGE_DETECTION_RANGE,
+                                groundLayer))
+                        {
+                            lastLedgeX = hit.point.x;
+                        }
+                    }
+                    
+                    //setting volume based on distance
+                    if (ledgeForward != ledgeBack)
+                    {
+                        float dist = Mathf.Abs(transform.position.x - lastLedgeX) / LEDGE_DETECTION_RANGE;
+                        ledgeAudioSource.volume = 1 - dist;
+                    }
+                }
+                
+                //playing ledge audio
+                switch (ledgeForward != ledgeBack)
+                {
+                    case false when ledgeAudioSource.isPlaying:
+                        ledgeAudioSource.Pause();
+                        break;
+                    case true when !ledgeAudioSource.isPlaying:
+                        ledgeAudioSource.UnPause();
+                        break;
+                }
+                
+                
                 //Character movement
                 float desiredSpeed = MoveAction.ReadValue<float>() * maxSpeed;
                 
-                if (playerState <= PlayerStates.CanWalk)
+                if (PlayerState <= PlayerStates.CanWalk)
                     Move(desiredSpeed);
                 
             }
 
             private void Jump(InputAction.CallbackContext context)
             {
-                if (!isGrounded || playerState > PlayerStates.Jumping) return;
+                if (!isGrounded || PlayerState > PlayerStates.Jumping) return;
                 
-                playerState = PlayerStates.Jumping;
+                PlayerState = PlayerStates.Jumping;
                 col.material = slipperyMaterial;
                 rb.linearVelocity = Vector3.right * rb.linearVelocity.x;
-                rb.AddForce(Vector3.up * jumpForce, ForceMode.VelocityChange);
+                rb.linearVelocity += Vector3.up * jumpForce;
+                SfxAudioSource.PlayOneShot(jumpStartSound, 0.7f);
+            }
+
+            private void OnGrounded()
+            {
+                if (PlayerState == PlayerStates.Falling)
+                {
+                    SfxAudioSource.PlayOneShot(landingSound, 0.5f);
+                    VibrateController(0.1f, 0.5f, 0.1f);
+                }
+                if (PlayerState <= PlayerStates.Jumping)
+                    PlayerState = PlayerStates.Idle;
             }
             
             private void ObstacleCollisionCheck()
             {
+                bool wasGrounded = isGrounded;
                 isGrounded = Physics.OverlapBoxNonAlloc(transform.position + Vector3.down * (col.bounds.extents.y + 0.01f),
                     new Vector3(col.bounds.extents.x * 0.7f, 0.01f, 0), colliderCheck, Quaternion.identity, groundLayer) > 0;
+                if (!wasGrounded && isGrounded)
+                    OnGrounded();
                 
                 wallLeft = Physics.OverlapBoxNonAlloc(transform.position + Vector3.left * (col.bounds.extents.x + 0.01f),
                     new Vector3(0.01f, col.bounds.extents.y * 0.6f, 0), colliderCheck, Quaternion.identity, groundLayer) > 0;
@@ -230,7 +352,7 @@
 
             private void Move(float desiredSpeed)
             {
-                if (isGrounded && playerState <= PlayerStates.Walking) playerState = PlayerStates.Walking;
+                if (isGrounded && PlayerState <= PlayerStates.Walking) PlayerState = PlayerStates.Walking;
 
                 switch (desiredSpeed)
                 {
@@ -259,14 +381,16 @@
         #region TakingDamage and Dying
         public override void TakeDamage(int damage, Transform attacker)
         {
+            VibrateController(0.2f, 0.2f, 0.5f);
+            
             if (damage <= 0)
                 return;
             
             if (powers.Count > 0)
             {
-                if (playerState <= PlayerStates.Hit)
+                if (PlayerState <= PlayerStates.Hit)
                 {
-                    playerState = PlayerStates.Idle;
+                    PlayerState = PlayerStates.Idle;
                     StartCoroutine(DamageJump(attacker));
                     StartCoroutine(InvincibilityFrame());
                 }
@@ -291,7 +415,7 @@
             rb.linearVelocity = Vector3.zero;
             rb.AddForce(dir, ForceMode.Impulse);
 
-            playerState = PlayerStates.Hit;
+            PlayerState = PlayerStates.Hit;
             yield return new WaitForSeconds(0.1f);
             
             while (!IsGrounded)
@@ -299,12 +423,12 @@
                 yield return null;
             }
             
-            playerState = PlayerStates.Idle;
+            PlayerState = PlayerStates.Idle;
         }
 
         private IEnumerator InvincibilityFrame()
         {
-            gameObject.layer = GameManager.Instance.InvincibleLayer;
+            gameObject.layer = GameManager.Instance.invincibleLayer;
             float timer = 0f;
             Color startColor = material.color;
             
@@ -320,7 +444,7 @@
 
             material.color = startColor;
             
-            gameObject.layer = GameManager.Instance.PlayerLayer;
+            gameObject.layer = GameManager.Instance.playerLayer;
         }
         #endregion
         
@@ -328,5 +452,24 @@
         {
             Score += amount;
             GUIManager.Instance.UpdateScore();
+        }
+
+        private void OnDestroy()
+        {
+            if (controllerVibration != null)
+            {
+                StopAllCoroutines();
+                Gamepad.current.SetMotorSpeeds(0, 0);
+            }
+            
+        }
+
+        public void VibrateController(float duration, float lowFrequency, float highFrequency, bool fade = false)
+        {
+            if (controllerVibration != null)
+                StopCoroutine(controllerVibration);
+            if (Gamepad.current != null) 
+                controllerVibration = StartCoroutine(Utils.VibrateController(Gamepad.current, duration,
+                    lowFrequency, highFrequency, fade));
         }
     }

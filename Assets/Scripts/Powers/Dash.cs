@@ -6,15 +6,28 @@ namespace Powers
 {
     public class Dash : Power
     {
-        private const float DashSpeed = 80f;
-        private const float DashCooldown = 3f;
-        private const float DashLenght = 6f;
+        private const float DASH_SPEED = 80f;
+        private const float DASH_COOLDOWN = 3f;
+        private const float DASH_LENGHT = 6f;
+
+        private float _currentDashCooldown;
+
+        private float CurrentDashCooldown
+        {
+            get => _currentDashCooldown;
+            set
+            {
+                _currentDashCooldown = value;
+                if (_currentDashCooldown > 0 && !cooldownActive)
+                    coroutine = plr.StartCoroutine(DashCooldownRoutine());
+            }
+        }
         
         private Rigidbody rb;
         private Player plr;
 
-        private bool canDash = true;
-
+        private bool cooldownActive = false;
+        
         private Coroutine coroutine;
         
         
@@ -33,11 +46,11 @@ namespace Powers
 
         private void DashAbility(InputAction.CallbackContext context)
         {
-            if (!canDash || plr.playerState > Player.PlayerStates.Dashing)
+            if (CurrentDashCooldown > 0 || plr.PlayerState > Player.PlayerStates.Dashing)
                 return;
             
-            canDash = false;
-            plr.playerState = Player.PlayerStates.Dashing;
+            CurrentDashCooldown = DASH_COOLDOWN;
+            plr.PlayerState = Player.PlayerStates.Dashing;
 
             coroutine = plr.StartCoroutine(Dashing());
             
@@ -45,14 +58,20 @@ namespace Powers
 
         private IEnumerator DashCooldownRoutine()
         {
-            float timer = 0f;
+            cooldownActive = true;
+            plr.DashIcon.gameObject.SetActive(true);
             
-            while (timer < DashCooldown)
+            while (CurrentDashCooldown > 0)
             {
-                timer += Time.deltaTime;
+                CurrentDashCooldown -= Time.deltaTime;
+                plr.DashIcon.fillAmount = CurrentDashCooldown > 0.01f ? 1 - CurrentDashCooldown / DASH_COOLDOWN : 0;
                 yield return null;
             }
-            canDash = true;
+
+            plr.VibrateController(0.05f, 0.4f, 0.1f, true);
+            plr.DashIcon.gameObject.SetActive(false);
+            cooldownActive = false;
+            plr.SfxAudioSource.PlayOneShot(plr.DashReadySound);
         }
 
         private IEnumerator Dashing()
@@ -60,14 +79,14 @@ namespace Powers
             float amountTravelled = 0f;
             float desiredDir = plr.transform.right.x > 0 ? 1 : -1;
 
-            while (amountTravelled < DashLenght && plr.playerState == Player.PlayerStates.Dashing)
+            while (amountTravelled < DASH_LENGHT && plr.PlayerState == Player.PlayerStates.Dashing)
             {
                 if (plr.IsWallRight  && desiredDir > 0)
                     break;
                 if (plr.IsWallLeft  && desiredDir < 0)
                     break;
                 
-                float currentSpeed = DashSpeed * Time.deltaTime;
+                float currentSpeed = DASH_SPEED * Time.deltaTime;
                 
 
                 if (rb.SweepTest(Vector3.right * desiredDir, out RaycastHit hit, currentSpeed))
@@ -82,12 +101,10 @@ namespace Powers
                 yield return null;
             }
             
-            if (plr.playerState == Player.PlayerStates.Dashing)
-                plr.playerState = Player.PlayerStates.Idle;
+            if (plr.PlayerState == Player.PlayerStates.Dashing)
+                plr.PlayerState = Player.PlayerStates.Idle;
 
             rb.linearVelocity = Vector3.zero;
-            
-            yield return plr.StartCoroutine(DashCooldownRoutine());
         }
     }
 }

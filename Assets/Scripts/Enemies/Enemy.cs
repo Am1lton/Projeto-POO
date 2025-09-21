@@ -1,18 +1,29 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 
 namespace Enemies
 {
-    [RequireComponent(typeof(Rigidbody))]
+    [RequireComponent(typeof(Rigidbody), typeof(AudioSource))]
     public class Enemy : Entity
     {
+        [Header("Physics and Movement")]
         [SerializeField] private Collider nonTriggerCollider;
         [SerializeField] protected LayerMask groundLayer;
         [SerializeField] private float moveSpeed;
+        
+        [Header("Score")]
         [SerializeField] private int scoreGivenOnDeath;
+        
+        [Header("Audio")]
+        [SerializeField] private AudioSource audioSource;
+        [SerializeField] private AudioClip deathSound;
+        
+        private const float MIN_AUDIO_DISTANCE = 25;
+        private const float AUDIO_PAN_SWITCH_DISTANCE = 10f;
 
         private Vector3 extents;
         private Rigidbody rb;
-        private bool wall = false;
+        private bool wall;
         private readonly Collider[] wallCheck = new Collider[1];
         
         
@@ -23,6 +34,10 @@ namespace Enemies
             extents = nonTriggerCollider.bounds.extents;
             extents.z = 0;
             nonTriggerCollider.excludeLayers = ~groundLayer;
+
+            audioSource.loop = true;
+            if (!audioSource.playOnAwake) audioSource.Play();
+            audioSource.Pause();
         }
 
         #region Debug
@@ -39,6 +54,24 @@ namespace Enemies
         
         protected virtual void FixedUpdate()
         {
+            if (Vector3.Distance(GameManager.Instance.CenterOfScreen.position, transform.position) < MIN_AUDIO_DISTANCE)
+            {
+                audioSource.UnPause();
+                
+                float panStereo = transform.position.x - GameManager.Instance.CenterOfScreen.position.x;
+                if (Mathf.Abs(panStereo) > AUDIO_PAN_SWITCH_DISTANCE)
+                    audioSource.panStereo = panStereo > 0 ? 1 : -1;
+                else
+                {
+                    audioSource.panStereo = panStereo != 0 ? panStereo / AUDIO_PAN_SWITCH_DISTANCE : 0;    
+                }
+                
+                audioSource.volume = 
+                    (MIN_AUDIO_DISTANCE - Vector3.Distance(GameManager.Instance.CenterOfScreen.position, transform.position)) / (MIN_AUDIO_DISTANCE * 0.9f);
+            }
+            else
+                audioSource.Pause();
+            
             Move();
         }
 
@@ -73,7 +106,7 @@ namespace Enemies
 
         private void OnTriggerEnter(Collider other)
         {
-            if (other.gameObject.layer != GameManager.Instance.PlayerLayer) return;
+            if (other.gameObject.layer != GameManager.Instance.playerLayer) return;
 
             if (CheckIfHitFromAbove(other))
             {
@@ -104,7 +137,20 @@ namespace Enemies
         protected override void Die()
         {
             Player.AddScore(scoreGivenOnDeath);
-            base.Die();
+            audioSource.clip = deathSound;
+            audioSource.loop = false;
+            audioSource.Play();
+            audioSource.time = 0;
+            GetComponent<Collider>().enabled = false;
+            GetComponent<MeshRenderer>().enabled = false;
+            StartCoroutine(WaitForAudio());
+        }
+
+        private IEnumerator WaitForAudio()
+        {
+            while (audioSource.isPlaying)
+                yield return null;
+            Destroy(audioSource.gameObject);
         }
     }
 }
